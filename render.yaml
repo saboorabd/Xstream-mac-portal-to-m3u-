@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: tamil-iptv-filter
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 180 --workers 2
+    envVars:
+      - key: ACCESS_KEY
+        sync: false   # Render dashboard-la set pannunga (optional, but recommended)
+      - key: XTREAM_URL
+        sync: false   # optional: http://host:port  (short link ku)
