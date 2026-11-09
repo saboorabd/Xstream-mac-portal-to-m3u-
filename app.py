@@ -8,9 +8,9 @@ app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 ACCESS_KEY = os.environ.get("ACCESS_KEY", "")
-XTREAM_URL = os.environ.get("XTREAM_URL", "")  # optional: provider host, short links ku
+XTREAM_URL = os.environ.get("XTREAM_URL", "")   # optional: provider host for short links
 TIMEOUT = 40
-DEFAULT_KW = "tamil,தமிழ்"
+DEFAULT_KW = ""  # empty = no filter, all categories
 STB_UA = ("Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) "
           "MAG200 stbapp ver: 2 rev: 250 Safari/533.3")
 
@@ -33,7 +33,7 @@ def kw_list(s, default=""):
 
 def matches(name, inc, exc):
     n = (name or "").lower()
-    return any(k in n for k in inc) and not any(k in n for k in exc)
+    return (not inc or any(k in n for k in inc)) and not any(k in n for k in exc)
 
 def esc(s):
     return str(s or "").replace('"', "'").replace("\n", " ").replace("\r", " ")
@@ -107,7 +107,7 @@ def x_playlist(base, u, p, kind):
     fmt = a.get("fmt", "ts")
     cats = x_api(base, u, p, KINDS[kind][0])
     if not isinstance(cats, list):
-        abort(401, "Login failed - username / password / URL check pannunga")
+        abort(401, "Login failed - check URL, username and password")
     chosen = set(c for c in a.get("cats", "").split(",") if c)
     names = {}
     for c in cats:
@@ -129,7 +129,7 @@ def x_playlist(base, u, p, kind):
     if a.get("sort", "1") == "1":
         items.sort(key=lambda i: (i["group"].lower(), (i["name"] or "").lower()))
     epg = f"{base}/xmltv.php?username={u}&password={p}" if kind == "live" else None
-    return m3u_response(build_m3u(items, epg), f"tamil_xtream_{kind}")
+    return m3u_response(build_m3u(items, epg), f"xtream_{kind}")
 
 def _kind():
     k = request.args.get("kind", "live")
@@ -148,7 +148,7 @@ def xtream_m3u():
 def short_m3u(user, pw):
     check_key()
     if not XTREAM_URL:
-        abort(404, "XTREAM_URL env var set pannunga, illati /host:port/user/pass.m3u use pannunga")
+        abort(404, "Set the XTREAM_URL env var, or use /host:port/user/pass.m3u")
     return x_playlist(x_base(XTREAM_URL), user, pw, _kind())
 
 # Clean links:  https://<app>/<host:port>/<username>/<password>.m3u
@@ -199,7 +199,7 @@ class Portal:
             except Exception as e:
                 last = e
         if not self.token:
-            raise RuntimeError(f"Portal handshake failed ({last}). URL / MAC check pannunga.")
+            raise RuntimeError(f"Portal handshake failed ({last}). Check the portal URL and MAC address.")
         self._get({
             "type": "stb", "action": "get_profile", "hd": "1", "num_banks": "2",
             "sn": self.sn, "stb_type": "MAG250", "client_type": "STB",
@@ -280,7 +280,7 @@ def portal_m3u():
                       "tvg_id": c.get("xmltv_id"), "url": play})
     if a.get("sort") == "1":
         items.sort(key=lambda i: (i["group"].lower(), (i["name"] or "").lower()))
-    return m3u_response(build_m3u(items), "tamil_portal")
+    return m3u_response(build_m3u(items), "portal")
 
 @app.get("/portal/play")
 def portal_play():
@@ -296,8 +296,8 @@ def portal_play():
     return redirect(url, 302)
 
 # ---------------------------------------------------------------- UI
-HTML = r"""<!doctype html><html lang="ta"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Tamil IPTV Filter</title>
+HTML = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Xtream &amp; MAC to M3U</title>
 <style>
 :root{--bg:#fff;--fg:#1a1a1a;--card:#f4f4f6;--bd:#d0d0d6;--ac:#6d28d9}
 @media(prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--card:#1c1c20;--bd:#333;--ac:#a78bfa}}
@@ -309,7 +309,7 @@ button{cursor:pointer}button.on,button.pri{background:var(--ac);color:#fff;borde
 label.c input{width:auto;margin:0}#cats{max-height:260px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:6px 10px;margin:6px 0}
 #msg{font-size:13px;opacity:.85;word-break:break-all}.hide{display:none}
 </style></head><body>
-<h1>🎬 Tamil IPTV Filter</h1>
+<h1>🎬 Xtream &amp; MAC to M3U</h1>
 <div class="tabs"><button id="tx" class="on" onclick="mode('xtream')">Xtream Code</button>
 <button id="tp" onclick="mode('portal')">MAC Portal</button></div>
 <div id="key" class="hide"><input id="k" placeholder="Access key"></div>
@@ -322,13 +322,13 @@ label.c input{width:auto;margin:0}#cats{max-height:260px;overflow:auto;border:1p
 <input id="purl" placeholder="Portal URL (http://host/c/)"><input id="mac" placeholder="MAC address 00:1A:79:xx:xx:xx">
 <div class="row"><input id="d1" placeholder="Device ID 1"><input id="d2" placeholder="Device ID 2"></div>
 <input id="sn" placeholder="Serial number"></div>
-<input id="keywords" value="tamil,தமிழ்" placeholder="Include keywords (comma)">
-<input id="exclude" placeholder="Exclude keywords (comma) e.g. xxx,adult">
-<label class="c"><input type="checkbox" id="sort" checked> A-Z sort</label>
-<button class="pri" onclick="load()">1. Categories load pannu</button>
+<input id="keywords" placeholder="Include keywords (optional), e.g. tamil,sports">
+<input id="exclude" placeholder="Exclude keywords (optional), e.g. adult,xxx">
+<label class="c"><input type="checkbox" id="sort" checked> Sort A-Z</label>
+<button class="pri" onclick="load()">1. Load categories</button>
 <div id="cats" class="hide"></div>
-<button class="pri" onclick="gen()">2. M3U link create pannu</button>
-<input id="out" readonly placeholder="M3U link inga varum" onclick="this.select()">
+<button class="pri" onclick="gen()">2. Create M3U link</button>
+<input id="out" readonly placeholder="Your M3U link appears here" onclick="this.select()">
 <div class="row"><button onclick="cp()">Copy</button><button onclick="dl()">Download .m3u</button></div>
 <div id="msg"></div>
 <script>
@@ -354,12 +354,12 @@ if(M=='portal'){const q=qs();if(shown)q.set('cats',ids);if(download)q.set('downl
 const u=$('username').value,p=$('password').value;let h=$('url').value.trim();const https=h.startsWith('https');
 h=h.replace(/^https?:\/\//,'').replace(/\/.*$/,'');const q=new URLSearchParams();
 if($('kind').value!='live')q.set('kind',$('kind').value);if($('fmt').value!='ts')q.set('fmt',$('fmt').value);
-if($('keywords').value!='tamil,தமிழ்')q.set('keywords',$('keywords').value);if($('exclude').value)q.set('exclude',$('exclude').value);
+if($('keywords').value)q.set('keywords',$('keywords').value);if($('exclude').value)q.set('exclude',$('exclude').value);
 if(shown&&ids!=def)q.set('cats',ids);if(!$('sort').checked)q.set('sort','0');if(https)q.set('https','1');
 if($('k').value)q.set('key',$('k').value);if(download)q.set('download','1');
 const path=(CFG.xtream_url?'':encodeURIComponent(h)+'/')+encodeURIComponent(u)+'/'+encodeURIComponent(p)+'.m3u';
 const s=q.toString();return location.origin+'/'+path+(s?'?'+s:'')}
-function gen(){$('out').value=link();$('msg').textContent='Link ready ✅ (IPTV player-la paste pannunga)'}
+function gen(){$('out').value=link();$('msg').textContent='Link ready ✅ Paste it into your IPTV player'}
 function cp(){gen();navigator.clipboard.writeText($('out').value);$('msg').textContent='Copied ✅'}
 function dl(){location.href=link(true)}
 </script></body></html>"""
