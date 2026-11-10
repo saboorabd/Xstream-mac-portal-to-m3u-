@@ -1,0 +1,19 @@
+[
+  {
+    "name": "portal1",
+    "url": "http://example.com/stalker_portal/c/",
+    "mac": "00:1A:79:00:00:01",
+    "sn": "0000000000000",
+    "d1": "PUT_DEVICE_ID_1_HERE",
+    "d2": "PUT_DEVICE_ID_2_HERE",
+    "output": "portal1.m3u"
+  },
+  {
+    "name": "portal2",
+    "url": "http://example.org:80/stalker_portal/c/",
+    "mac": "00:1A:79:00:00:02",
+    "sn": "0000000000000",
+    "d1": "PUT_DEVICE_ID_1_HERE",
+    "d2": "PUT_DEVICE_ID_2_HERE"
+  }
+]

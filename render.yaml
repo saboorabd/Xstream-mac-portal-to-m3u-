@@ -4,9 +4,16 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 180 --workers 2
+    # ONE worker + many threads: the portal token and cache live in memory, and the
+    # proxy mode streams for a long time, which needs threads (gthread) instead of sync workers.
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 16 --timeout 120 --graceful-timeout 20
+    healthCheckPath: /healthz
     envVars:
       - key: ACCESS_KEY
         sync: false   # set in the Render dashboard (recommended)
+      - key: SECRET_KEY
+        generateValue: true   # signs the proxy segment links
       - key: XTREAM_URL
         sync: false   # optional: http://host:port  (short links)
+      - key: DEFAULT_EPG
+        sync: false   # optional: XMLTV url added to MAC portal playlists
