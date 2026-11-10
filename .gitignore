@@ -1,5 +1,7 @@
-__pycache__/
-*.pyc
-.env
-portals.json
-*.m3u
+.gradle/
+build/
+app/build/
+local.properties
+*.apk
+*.iml
+.idea/
