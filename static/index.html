@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xtream &amp; MAC to M3U</title>
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--card:#f4f4f6;--bd:#d0d0d6;--ac:#6d28d9;--ok:#15803d;--er:#b91c1c}
+@media(prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--card:#1c1c20;--bd:#333;--ac:#a78bfa;--ok:#4ade80;--er:#f87171}}
+body{margin:0;padding:14px;background:var(--bg);color:var(--fg);font:15px system-ui,sans-serif;max-width:640px;margin:auto}
+h1{font-size:20px}.tabs{display:flex;gap:8px;margin-bottom:10px}.tabs button{flex:1}
+button,input,select{font:inherit;padding:9px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--fg);width:100%;box-sizing:border-box;margin:4px 0}
+button{cursor:pointer}button.on,button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+label.c{display:flex;gap:8px;align-items:center;padding:4px 0}label.c input{width:auto;margin:0}
+#cats{max-height:260px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:6px 10px;margin:6px 0}
+#msg{font-size:13px;opacity:.9;word-break:break-word;margin-top:6px}#msg.ok{color:var(--ok)}#msg.er{color:var(--er)}
+small{opacity:.7}.hide{display:none}
+</style></head><body>
+<h1>🎬 Xtream &amp; MAC to M3U</h1>
+<div class="tabs"><button id="tx" class="on" onclick="mode('xtream')">Xtream Code</button>
+<button id="tp" onclick="mode('portal')">MAC Portal</button></div>
+<div id="key" class="hide"><input id="k" placeholder="Access key" autocomplete="off"></div>
+
+<div id="xtream">
+<input id="url" placeholder="Server URL (http://host:port)">
+<div class="row"><input id="username" placeholder="Username" autocomplete="off"><input id="password" placeholder="Password" autocomplete="off"></div>
+<div class="row"><select id="kind"><option value="live">Live TV</option><option value="vod">Movies (VOD)</option></select>
+<select id="fmt"><option value="ts">.ts</option><option value="m3u8">.m3u8</option></select></div>
+</div>
+
+<div id="portal" class="hide">
+<input id="purl" placeholder="Portal URL (http://host/stalker_portal/c/)">
+<input id="mac" placeholder="MAC address 00:1A:79:xx:xx:xx" autocomplete="off">
+<div class="row"><input id="d1" placeholder="Device ID 1" autocomplete="off"><input id="d2" placeholder="Device ID 2 (optional)" autocomplete="off"></div>
+<input id="sn" placeholder="Serial number" autocomplete="off">
+<select id="pmode">
+<option value="redirect">Play mode: Redirect (fast, try this first)</option>
+<option value="proxy">Play mode: Proxy (use if channels don't play)</option>
+</select>
+<input id="epg" placeholder="EPG XMLTV URL (optional)">
+<button onclick="test()">Test connection</button>
+</div>
+
+<input id="keywords" placeholder="Include keywords (optional), e.g. tamil,sports">
+<input id="exclude" placeholder="Exclude keywords (optional), e.g. adult,xxx">
+<label class="c"><input type="checkbox" id="sort" checked> Sort A-Z</label>
+<button class="pri" onclick="load()">1. Load categories</button>
+<div id="catsbar" class="hide row"><button onclick="sel(true)">Select all</button><button onclick="sel(false)">Select none</button></div>
+<div id="cats" class="hide"></div>
+<button class="pri" onclick="gen()">2. Create M3U link</button>
+<input id="out" readonly placeholder="Your M3U link appears here" onclick="this.select()">
+<div class="row"><button onclick="cp()">Copy</button><button onclick="dl()">Download .m3u</button></div>
+<div id="msg"></div>
+
+<script>
+let M='xtream',CFG={};const $=i=>document.getElementById(i);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function say(t,cls){const m=$('msg');m.textContent=t;m.className=cls||''}
+fetch('/api/config').then(r=>r.json()).then(c=>{CFG=c;if(c.key_required)$('key').classList.remove('hide')}).catch(()=>{});
+if(location.search.includes('askkey'))$('key').classList.remove('hide');
+
+function mode(m){M=m;$('xtream').classList.toggle('hide',m!='xtream');$('portal').classList.toggle('hide',m!='portal');
+$('tx').className=m=='xtream'?'on':'';$('tp').className=m=='portal'?'on':'';
+$('cats').classList.add('hide');$('catsbar').classList.add('hide');say('')}
+
+function qs(){const q=new URLSearchParams();
+if(M=='xtream'){q.set('url',$('url').value);q.set('username',$('username').value);q.set('password',$('password').value);q.set('kind',$('kind').value);q.set('fmt',$('fmt').value)}
+else{q.set('url',$('purl').value);q.set('mac',$('mac').value);q.set('d1',$('d1').value);q.set('d2',$('d2').value);q.set('sn',$('sn').value)}
+q.set('keywords',$('keywords').value);q.set('exclude',$('exclude').value);if($('sort').checked)q.set('sort','1');
+if($('k').value)q.set('key',$('k').value);return q}
+
+async function api(path){const r=await fetch(path);let d;try{d=await r.json()}catch(e){d={error:'HTTP '+r.status}}
+if(!r.ok)throw d.error||('HTTP '+r.status);return d}
+
+async function test(){say('Testing… (login + channel list + one link)');
+try{const d=await api('/api/portal/test?'+qs());
+let t='✅ Connected · '+d.channels+' channels in '+d.categories+' categories';
+if(d.expires)t+=' · expires '+d.expires;
+if(d.sample_link_host)t+=' · link OK ('+d.sample_channel+' → '+d.sample_link_host+')';
+if(d.sample_error)t+=' · ⚠️ link test failed: '+d.sample_error;
+if(d.profile_warning)t+=' · ⚠️ profile: '+d.profile_warning;
+say(t,d.sample_error?'er':'ok')}catch(e){say('❌ '+e,'er')}}
+
+async function load(){say('Loading…');
+try{const d=await api('/api/'+M+'/categories?'+qs());
+$('cats').innerHTML=d.map(c=>`<label class="c"><input type="checkbox" value="${esc(c.id)}" data-m="${c.matched?1:0}" ${c.matched?'checked':''}> ${esc(c.name)}${c.count!=null?' <small>('+c.count+')</small>':''}</label>`).join('');
+$('cats').classList.remove('hide');$('catsbar').classList.remove('hide');
+say(d.filter(c=>c.matched).length+' / '+d.length+' categories matched','ok')}
+catch(e){say('❌ '+e,'er')}}
+
+function sel(all){document.querySelectorAll('#cats input').forEach(b=>b.checked=all)}
+
+function link(download){
+const boxes=[...document.querySelectorAll('#cats input')];const shown=!$('cats').classList.contains('hide');
+const ids=boxes.filter(b=>b.checked).map(b=>b.value).join(',');const def=boxes.filter(b=>b.dataset.m=='1').map(b=>b.value).join(',');
+if(M=='portal'){const q=qs();if(shown)q.set('cats',ids);if($('pmode').value=='proxy')q.set('proxy','1');
+if($('epg').value.trim())q.set('epg',$('epg').value.trim());if(download)q.set('download','1');return location.origin+'/portal.m3u?'+q}
+const u=$('username').value,p=$('password').value;let h=$('url').value.trim();const https=h.startsWith('https');
+h=h.replace(/^https?:\/\//,'').replace(/\/.*$/,'');const q=new URLSearchParams();
+if($('kind').value!='live')q.set('kind',$('kind').value);if($('fmt').value!='ts')q.set('fmt',$('fmt').value);
+if($('keywords').value)q.set('keywords',$('keywords').value);if($('exclude').value)q.set('exclude',$('exclude').value);
+if(shown&&ids!=def)q.set('cats',ids);if(!$('sort').checked)q.set('sort','0');if(https)q.set('https','1');
+if($('k').value)q.set('key',$('k').value);if(download)q.set('download','1');
+const path=(CFG.xtream_url?'':encodeURIComponent(h)+'/')+encodeURIComponent(u)+'/'+encodeURIComponent(p)+'.m3u';
+const s=q.toString();return location.origin+'/'+path+(s?'?'+s:'')}
+
+function gen(){$('out').value=link();say('Link ready ✅ Paste it into your IPTV player','ok')}
+function cp(){gen();const o=$('out');
+(navigator.clipboard?navigator.clipboard.writeText(o.value):Promise.reject()).catch(()=>{o.select();document.execCommand('copy')});
+say('Copied ✅','ok')}
+function dl(){location.href=link(true)}
+</script></body></html>
