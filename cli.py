@@ -24,7 +24,8 @@ from stalker import Portal, PortalError, clean_cmd
 def run(cfg, args, out_path):
     name = cfg.get("name") or cfg["url"]
     print(f"\n===== {name} =====")
-    portal = Portal(cfg["url"], cfg["mac"], cfg.get("d1", ""), cfg.get("d2", ""), cfg.get("sn", ""))
+    portal = Portal(cfg["url"], cfg["mac"], cfg.get("d1", ""), cfg.get("d2", ""), cfg.get("sn", ""),
+                    proxy=args.proxy or None)
 
     print("[1/4] Handshake + profile ...")
     portal.login()
@@ -92,6 +93,7 @@ def main():
     ap.add_argument("--no-sort", dest="sort", action="store_false", help="keep portal order")
     ap.add_argument("--no-resolve", action="store_true",
                     help="do not call create_link (only works for portals with direct links)")
+    ap.add_argument("--proxy", default="", help="optional http://user:pass@host:port")
     ap.add_argument("--threads", type=int, default=8)
     args = ap.parse_args()
 

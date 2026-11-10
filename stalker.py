@@ -60,7 +60,7 @@ def _loads(text):
 
 
 class Portal:
-    def __init__(self, url, mac, d1="", d2="", sn="", timeout=DEFAULT_TIMEOUT):
+    def __init__(self, url, mac, d1="", d2="", sn="", timeout=DEFAULT_TIMEOUT, proxy=None):
         url = (url or "").strip()
         if not url:
             raise PortalError("Portal URL is missing")
@@ -94,9 +94,12 @@ class Portal:
         self.timeout = timeout
 
         self.s = requests.Session()
-        self.s.headers.update({"User-Agent": STB_UA, "Accept": "*/*",
+        self.s.headers.update({"User-Agent": STB_UA, "Accept": "*/*", "Accept-Encoding": "identity",
                                "X-User-Agent": "Model: MAG250; Link: WiFi",
                                "Referer": self.base + "/c/"})
+        if proxy:                       # route portal calls through another IP (see README)
+            self.proxy = proxy
+            self.s.proxies = {"http": proxy, "https": proxy}
         self.s.cookies.update({"mac": self.mac, "stb_lang": "en_US", "timezone": "Asia/Kolkata"})
 
         self.lock = threading.RLock()
@@ -122,7 +125,8 @@ class Portal:
             raise PortalError(f"Cannot reach portal ({e.__class__.__name__})") from e
         text = (r.text or "").strip()
         if r.status_code in (401, 403) or "authorization failed" in text[:200].lower():
-            raise AuthError(f"Portal rejected the session (HTTP {r.status_code})")
+            raise AuthError(f"Portal refused the request (HTTP {r.status_code}): MAC not allowed, "
+                            "or the portal blocks this server's IP address")
         if r.status_code >= 400:
             raise PortalError(f"Portal answered HTTP {r.status_code}")
         data = _loads(text)

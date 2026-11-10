@@ -31,6 +31,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 ACCESS_KEY = os.environ.get("ACCESS_KEY", "")
 XTREAM_URL = os.environ.get("XTREAM_URL", "")        # optional: provider host for short links
+PORTAL_PROXY = os.environ.get("PORTAL_PROXY", "")      # optional: http://user:pass@host:port for portal + stream calls
 DEFAULT_EPG = os.environ.get("DEFAULT_EPG", "")      # optional: XMLTV url added to portal playlists
 SECRET = (os.environ.get("SECRET_KEY") or ACCESS_KEY or secrets.token_hex(16)).encode()
 TIMEOUT = 40
@@ -290,7 +291,8 @@ def get_portal(cfg):
             ent[0] = time.time()
             return ent[1]
         try:
-            portal = Portal(cfg["url"], cfg["mac"], cfg["d1"], cfg["d2"], cfg["sn"], timeout=TIMEOUT)
+            portal = Portal(cfg["url"], cfg["mac"], cfg["d1"], cfg["d2"], cfg["sn"], timeout=TIMEOUT,
+                            proxy=PORTAL_PROXY or None)
         except PortalError as e:
             abort(400, str(e))
         if len(_pool) >= 30:
@@ -392,7 +394,8 @@ def seg_url(url, origin):
 def open_upstream(url, hops=5):
     for _ in range(hops):
         guard_url(url)
-        r = requests.get(url, headers=UP_HEADERS, stream=True, timeout=(10, 30), allow_redirects=False)
+        r = requests.get(url, headers=UP_HEADERS, stream=True, timeout=(10, 30), allow_redirects=False,
+                         proxies={"http": PORTAL_PROXY, "https": PORTAL_PROXY} if PORTAL_PROXY else None)
         if r.status_code in (301, 302, 303, 307, 308) and r.headers.get("Location"):
             url = urljoin(url, r.headers["Location"])
             r.close()

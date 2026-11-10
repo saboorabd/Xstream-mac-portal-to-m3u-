@@ -79,6 +79,17 @@ Several portals: copy `portals.example.json` to `portals.json`, edit it (it is g
 Useful options: `--keywords tamil,sports`, `--exclude adult`, `--only 2`, `--epg URL`, `--threads 8`, `--no-resolve`.
 Links in the CLI file are real stream links created at that moment; if channels stop playing later, run the command again.
 
+## Run the web app on your phone (Termux) - fixes "HTTP 403 / handshake failed" on Render
+Some portals refuse data-center IPs (Render, AWS ...) with HTTP 403 but accept your phone. Run the same web app on the phone:
+
+    pkg install python git -y
+    git clone https://github.com/<you>/<repo>.git && cd <repo>
+    pip install flask requests
+    ALLOW_PRIVATE=1 python app.py
+
+Open `http://127.0.0.1:5000` in the phone browser, build the link and use it in a player on the same phone (links point to `127.0.0.1:5000`). Keep Termux running (`termux-wake-lock`).
+Another option: set `PORTAL_PROXY=http://user:pass@host:port` (a proxy with an allowed IP) on Render.
+
 ## Run locally
 
     pip install -r requirements.txt
@@ -99,11 +110,13 @@ Uses a built-in fake Stalker portal and fake Xtream server, no real network need
 | `SECRET_KEY` | Signs proxy segment links (Render generates it) |
 | `XTREAM_URL` | Short Xtream links |
 | `DEFAULT_EPG` | Default XMLTV url for MAC portal playlists |
+| `PORTAL_PROXY` | Optional outbound proxy for portal and stream calls |
 | `ALLOW_PRIVATE` | `1` = allow private / LAN addresses |
 
 ## Troubleshooting
 | Message | Meaning / fix |
 |---|---|
+| `Portal refused the request (HTTP 403)` | Portal blocks the server's IP (common on Render) or the MAC is not allowed. Run the app / CLI on your phone, or set `PORTAL_PROXY`. |
 | `Handshake failed ... non-JSON reply` | Wrong portal URL, or the portal blocks the server's IP. Try the CLI from your phone. |
 | `Handshake failed ... no token` | MAC not registered / account expired. |
 | `Portal returned 0 channels` | Account expired, MAC not active, or device IDs / serial wrong. |

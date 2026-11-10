@@ -17,3 +17,5 @@ services:
         sync: false   # optional: http://host:port  (short links)
       - key: DEFAULT_EPG
         sync: false   # optional: XMLTV url added to MAC portal playlists
+      - key: PORTAL_PROXY
+        sync: false   # optional: http://user:pass@host:port (use if the portal blocks Render's IP)
