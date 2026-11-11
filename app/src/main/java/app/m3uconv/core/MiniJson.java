@@ -203,6 +203,48 @@ public final class MiniJson {
         return o.toString();
     }
 
+    /** Serialise Map / List / String / Number / Boolean / null. */
+    public static String write(Object o) {
+        StringBuilder sb = new StringBuilder();
+        w(sb, o);
+        return sb.toString();
+    }
+
+    private static void w(StringBuilder sb, Object o) {
+        if (o == null) {
+            sb.append("null");
+        } else if (o instanceof String) {
+            sb.append(quote((String) o));
+        } else if (o instanceof Boolean || o instanceof Integer || o instanceof Long) {
+            sb.append(o);
+        } else if (o instanceof Number) {
+            double d = ((Number) o).doubleValue();
+            if (d == Math.rint(d) && Math.abs(d) < 1e15) sb.append((long) d);
+            else sb.append(d);
+        } else if (o instanceof Map) {
+            sb.append('{');
+            boolean first = true;
+            for (Map.Entry<?, ?> e : ((Map<?, ?>) o).entrySet()) {
+                if (!first) sb.append(',');
+                first = false;
+                sb.append(quote(String.valueOf(e.getKey()))).append(':');
+                w(sb, e.getValue());
+            }
+            sb.append('}');
+        } else if (o instanceof Iterable) {
+            sb.append('[');
+            boolean first = true;
+            for (Object x : (Iterable<?>) o) {
+                if (!first) sb.append(',');
+                first = false;
+                w(sb, x);
+            }
+            sb.append(']');
+        } else {
+            sb.append(quote(o.toString()));
+        }
+    }
+
     public static String quote(String t) {
         StringBuilder sb = new StringBuilder("\"");
         for (int k = 0; k < t.length(); k++) {

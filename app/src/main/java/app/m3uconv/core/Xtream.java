@@ -3,22 +3,31 @@ package app.m3uconv.core;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
-/** Xtream Codes support: category list + M3U playlist (stream links point straight at the provider). */
+/** Xtream Codes support. Stream links point straight at the provider, so no resolving is needed. */
 public final class Xtream {
     private Xtream() {
     }
 
-    private static final Map<String, Object[]> CACHE = new HashMap<>();   // key -> {timestamp, data}
+    public static final class Result {
+        public final List<Item> items = new ArrayList<>();
+        public final List<Object> cats = new ArrayList<>();
+        public String expires = "";
+        public String epg = "";
+    }
 
     public static String base(String url) {
         url = url == null ? "" : url.trim();
-        if (!url.toLowerCase().startsWith("http")) url = "http://" + url;
+        if (url.isEmpty()) throw new PortalException("Server URL is missing");
+        if (!url.toLowerCase(Locale.ROOT).startsWith("http")) url = "http://" + url;
         try {
             URL u = new URL(url);
             return u.getProtocol() + "://" + u.getAuthority();
@@ -27,18 +36,14 @@ public final class Xtream {
         }
     }
 
-    public static Object api(String base, String user, String pass, String action) {
-        String key = base + "|" + user + "|" + pass + "|" + action;
-        synchronized (CACHE) {
-            Object[] hit = CACHE.get(key);
-            if (hit != null && System.currentTimeMillis() - (Long) hit[0] < 5 * 60 * 1000L) return hit[1];
-        }
+    private static Object api(String base, String user, String pass, String action) {
         Map<String, String> h = new HashMap<>();
         h.put("User-Agent", "okhttp/4.9.0");
+        h.put("Accept-Encoding", "identity");
         Http.Resp r;
         try {
             r = Http.get(base + "/player_api.php?username=" + Util.enc(user) + "&password=" + Util.enc(pass)
-                    + "&action=" + Util.enc(action), h, 40000, true);
+                    + (action.isEmpty() ? "" : "&action=" + Util.enc(action)), h, 45000, true);
         } catch (IOException e) {
             throw new PortalException("Cannot connect to the server - check the URL", e);
         }
@@ -47,66 +52,71 @@ public final class Xtream {
         if (data == null) {
             throw new PortalException("Provider sent an invalid reply - check URL, username and password");
         }
-        synchronized (CACHE) {
-            if (CACHE.size() > 50) CACHE.clear();
-            CACHE.put(key, new Object[]{System.currentTimeMillis(), data});
-        }
         return data;
     }
 
-    public static final class Cat {
-        public String id, name;
-    }
-
-    public static List<Cat> categories(String base, String user, String pass, String kind) {
-        List<Object> l = MiniJson.list(api(base, user, pass, kind.equals("vod") ? "get_vod_categories" : "get_live_categories"));
-        if (l == null) throw new PortalException("Login failed or no categories returned");
-        List<Cat> out = new ArrayList<>();
-        for (Object o : l) {
-            Map<String, Object> m = MiniJson.map(o);
-            if (m == null) continue;
-            Cat c = new Cat();
-            c.id = MiniJson.str(m.get("category_id"));
-            c.name = MiniJson.str(m.get("category_name"));
-            out.add(c);
-        }
-        return out;
-    }
-
-    public static List<M3u.Entry> entries(String base, String user, String pass, String kind, String fmt,
-                                          List<String> inc, List<String> exc, java.util.Set<String> chosen) {
-        List<Cat> cats = categories(base, user, pass, kind);
+    public static Result load(String base, String user, String pass, String kind, String fmt) {
+        boolean live = !"vod".equals(kind);
+        Result res = new Result();
+        List<Object> cats = MiniJson.list(api(base, user, pass, live ? "get_live_categories" : "get_vod_categories"));
+        if (cats == null) throw new PortalException("Login failed - check username and password");
         Map<String, String> names = new LinkedHashMap<>();
-        for (Cat c : cats) {
-            boolean take = chosen.isEmpty() ? Util.matches(c.name, inc, exc) : chosen.contains(c.id);
-            if (take) names.put(c.id, c.name.isEmpty() ? "Other" : c.name);
+        for (Object o : cats) {
+            Map<String, Object> m = MiniJson.map(o);
+            if (m != null) names.put(MiniJson.str(m.get("category_id")), MiniJson.str(m.get("category_name")));
         }
-        boolean live = !kind.equals("vod");
         List<Object> streams = MiniJson.list(api(base, user, pass, live ? "get_live_streams" : "get_vod_streams"));
         if (streams == null) throw new PortalException("Provider returned no stream list");
-        List<M3u.Entry> out = new ArrayList<>();
+        Map<String, Integer> counts = new HashMap<>();
+        String qu = Util.quote(user), qp = Util.quote(pass);
         for (Object o : streams) {
             Map<String, Object> s = MiniJson.map(o);
             if (s == null) continue;
-            String cid = MiniJson.str(s.get("category_id"));
             String sid = MiniJson.str(s.get("stream_id"));
-            if (!names.containsKey(cid) || sid.isEmpty()) continue;
-            M3u.Entry e = new M3u.Entry();
-            e.name = MiniJson.str(s.get("name"));
-            if (e.name.isEmpty()) e.name = "Unknown";
-            e.logo = MiniJson.str(s.get("stream_icon"));
-            e.group = names.get(cid);
-            e.tvgId = MiniJson.str(s.get("epg_channel_id"));
+            if (sid.isEmpty()) continue;
+            String cid = MiniJson.str(s.get("category_id"));
+            Item it = new Item();
+            it.name = MiniJson.str(s.get("name")).trim();
+            if (it.name.isEmpty()) it.name = "Unknown";
+            it.logo = MiniJson.str(s.get("stream_icon"));
+            it.groupId = names.containsKey(cid) ? cid : "other";
+            it.group = names.containsKey(cid) && !names.get(cid).isEmpty() ? names.get(cid) : "Other";
+            it.tvgId = MiniJson.str(s.get("epg_channel_id"));
             if (live) {
-                e.chno = MiniJson.str(s.get("num"));
-                e.url = base + "/live/" + Util.quote(user) + "/" + Util.quote(pass) + "/" + sid + "." + fmt;
+                it.chno = MiniJson.str(s.get("num"));
+                it.url = base + "/live/" + qu + "/" + qp + "/" + sid + "." + fmt;
             } else {
                 String ext = MiniJson.str(s.get("container_extension"));
-                e.url = base + "/movie/" + Util.quote(user) + "/" + Util.quote(pass) + "/" + sid + "."
-                        + (ext.isEmpty() ? "mp4" : ext);
+                it.url = base + "/movie/" + qu + "/" + qp + "/" + sid + "." + (ext.isEmpty() ? "mp4" : ext);
             }
-            out.add(e);
+            counts.merge(it.groupId, 1, Integer::sum);
+            res.items.add(it);
         }
-        return out;
+        if (res.items.isEmpty()) throw new PortalException("The provider returned 0 channels");
+        for (Map.Entry<String, String> e : names.entrySet()) {
+            Integer n = counts.get(e.getKey());
+            if (n == null) continue;
+            Map<String, Object> c = new LinkedHashMap<>();
+            c.put("id", e.getKey());
+            c.put("name", e.getValue().isEmpty() ? "Other" : e.getValue());
+            c.put("count", n);
+            res.cats.add(c);
+        }
+        Integer other = counts.get("other");
+        if (other != null) {
+            Map<String, Object> c = new LinkedHashMap<>();
+            c.put("id", "other");
+            c.put("name", "Other");
+            c.put("count", other);
+            res.cats.add(c);
+        }
+        if (live) res.epg = base + "/xmltv.php?username=" + qu + "&password=" + qp;
+        try {                                          // account expiry (optional)
+            Map<String, Object> info = MiniJson.map(MiniJson.map(api(base, user, pass, "")).get("user_info"));
+            long exp = Long.parseLong(MiniJson.str(info.get("exp_date")));
+            if (exp > 0) res.expires = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date(exp * 1000L));
+        } catch (RuntimeException ignored) {
+        }
+        return res;
     }
 }
