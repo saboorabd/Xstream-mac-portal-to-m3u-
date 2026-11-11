@@ -1,128 +1,132 @@
 import app.m3uconv.core.*;
 
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Plain-JVM test of the core (no Android needed). Needs a fake portal on PORTAL_PORT
- * (python3 tests/mock_portal.py style server from the web repo).
+ * Plain-JVM test of the whole engine (no Android needed). Needs the fake portal: python3 tools/mock_portal.py
  *   javac -d /tmp/out $(find app/src/main/java/app/m3uconv/core -name '*.java') tools/CoreSmoke.java
- *   java -cp /tmp/out CoreSmoke <portalPort>
+ *   java -cp /tmp/out CoreSmoke <fake portal port>
  */
 public class CoreSmoke {
     static int fails = 0;
+    static Engine e = new Engine();
 
     static void check(boolean ok, String what) {
         System.out.println((ok ? "PASS  " : "FAIL  ") + what);
         if (!ok) fails++;
     }
 
-    static String[] get(String url) throws Exception {
-        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-        c.setInstanceFollowRedirects(false);
-        int code = c.getResponseCode();
-        InputStream in = code >= 400 ? c.getErrorStream() : c.getInputStream();
-        String body = in == null ? "" : new String(Http.readAll(in), StandardCharsets.UTF_8);
-        String loc = c.getHeaderField("Location");
-        return new String[]{Integer.toString(code), body, loc == null ? "" : loc, c.getContentType()};
+    @SuppressWarnings("unchecked")
+    static Map<String, Object> call(String m, String args) {
+        return (Map<String, Object>) MiniJson.parse(e.call(m, args));
     }
 
-    static String q(String k, String v) throws Exception {
-        return k + "=" + URLEncoder.encode(v, "UTF-8");
+    static String portal(String pp, String mac) {
+        return "{\"type\":\"portal\",\"name\":\"Test Portal\",\"url\":\"http://127.0.0.1:" + pp
+                + "/stalker_portal/c/\",\"mac\":\"" + mac + "\",\"d1\":\"DDDD\",\"d2\":\"DDDD\",\"sn\":\"SN1\"}";
+    }
+
+    static Map<String, Object> finish(String job) throws Exception {
+        Map<String, Object> st = null;
+        for (int i = 0; i < 100; i++) {
+            st = call("status", "{\"job\":\"" + job + "\"}");
+            if (Boolean.TRUE.equals(st.get("finished"))) break;
+            Thread.sleep(100);
+        }
+        return st;
     }
 
     public static void main(String[] a) throws Exception {
         String pp = a[0];
-        LocalServer srv = new LocalServer(0, () -> "<html>MAC Portal</html>");
-        int port = srv.start();
-        String o = "http://127.0.0.1:" + port;
-        String cfg = q("url", "http://127.0.0.1:" + pp + "/stalker_portal/c/") + "&" + q("mac", "00-1a-79-00-00-01")
-                + "&" + q("d1", "DDDD") + "&" + q("d2", "DDDD") + "&" + q("sn", "SN0000000000000");
 
-        String[] r = get(o + "/");
-        check(r[0].equals("200") && r[1].contains("MAC Portal"), "index served");
+        // ---- connect
+        Map<String, Object> c = call("connect", "{\"source\":" + portal(pp, "00-1a-79-00-00-01") + "}");
+        String key = String.valueOf(c.get("key"));
+        check(c.get("error") == null && ((Number) c.get("channels")).intValue() == 5 && "2027-01-31".equals(c.get("expires")),
+                "connect: " + MiniJson.write(c).substring(0, Math.min(160, MiniJson.write(c).length())));
+        check(MiniJson.write(c.get("categories")).contains("{\"id\":\"1\",\"name\":\"Tamil\",\"count\":2}")
+                && MiniJson.write(c.get("categories")).contains("\"name\":\"Other\""), "categories with counts + Other");
 
-        r = get(o + "/api/portal/test?" + cfg);
-        check(r[0].equals("200") && r[1].contains("\"channels\":5") && r[1].contains("\"expires\":\"2027-01-31\"")
-                && r[1].contains("\"sample_link_host\":\"127.0.0.1:" + pp + "\""), "test endpoint: " + r[1]);
+        // ---- filters
+        Map<String, Object> l = call("list", "{\"key\":\"" + key + "\",\"filter\":{},\"offset\":0,\"limit\":60}");
+        check(((Number) l.get("total")).intValue() == 5, "list all = 5");
+        l = call("list", "{\"key\":\"" + key + "\",\"filter\":{\"cats\":[\"1\"]}}");
+        check(((Number) l.get("total")).intValue() == 2, "category filter");
+        l = call("list", "{\"key\":\"" + key + "\",\"filter\":{\"q\":\"sun, news\"}}");
+        check(((Number) l.get("total")).intValue() == 2, "name search (comma = any)");
+        l = call("list", "{\"key\":\"" + key + "\",\"filter\":{\"exclude\":\"adult\"}}");
+        check(((Number) l.get("total")).intValue() == 4, "exclude words");
+        l = call("list", "{\"key\":\"" + key + "\",\"filter\":{},\"offset\":3,\"limit\":10}");
+        check(((List<Object>) l.get("rows")).size() == 2, "paging");
 
-        r = get(o + "/api/portal/categories?" + cfg + "&" + q("keywords", "tamil") + "&" + q("exclude", "adult"));
-        check(r[1].contains("\"name\":\"Tamil\",\"count\":2,\"matched\":true")
-                && r[1].contains("\"name\":\"Sports\",\"count\":1,\"matched\":false")
-                && r[1].contains("\"name\":\"Other\""), "categories + counts + filter: " + r[1]);
+        // ---- resolve a single channel
+        Map<String, Object> r = call("resolve", "{\"key\":\"" + key + "\",\"id\":0}");
+        check(String.valueOf(r.get("url")).equals("http://127.0.0.1:" + pp + "/stream/1.ts?token=abc"), "resolve one channel: " + r.get("url"));
 
-        r = get(o + "/portal.m3u?" + cfg + "&sort=1&" + q("epg", "http://epg.example/x.xml"));
-        String m = r[1];
-        check(m.startsWith("#EXTM3U x-tvg-url=\"http://epg.example/x.xml\"\n"), "m3u header + epg");
-        check(m.split("#EXTINF").length - 1 == 5, "5 channels in m3u");
-        check(m.contains("group-title=\"Other\""), "unknown genre kept as Other");
-        check(m.contains("tvg-chno=\"1\""), "chno");
-        check(m.contains("tvg-logo=\"http://127.0.0.1:" + pp + "/stalker_portal/misc/logos/320/1.png\""), "absolute logo");
-        check(m.contains(",Star Sports  HD\n"), "comma removed from title");
-        check(r[3].startsWith("audio/x-mpegurl"), "content-type");
+        // ---- export (real links)
+        Map<String, Object> x = call("export", "{\"key\":\"" + key + "\",\"name\":\"My Portal!\",\"filter\":{\"exclude\":\"adult\"},"
+                + "\"opts\":{\"threads\":4,\"sort\":true}}");
+        String job = String.valueOf(x.get("job"));
+        Map<String, Object> st = finish(job);
+        check(((Number) st.get("ok")).intValue() == 4 && ((Number) st.get("failed")).intValue() == 0 && Boolean.TRUE.equals(st.get("hasFile")),
+                "export finished: " + MiniJson.write(st));
+        String m3u = e.jobResult(job);
+        check(m3u != null && m3u.split("#EXTINF").length - 1 == 4 && !m3u.contains("localhost") && !m3u.contains("127.0.0.1:8765")
+                && m3u.contains("http://127.0.0.1:" + pp + "/stream/1.ts?token=abc") && m3u.contains("/hls/5.m3u8"), "m3u has real links only");
+        check(m3u.indexOf("group-title=\"Other\"") < m3u.indexOf("group-title=\"Tamil\"")
+                && m3u.indexOf("group-title=\"Sports\"") < m3u.indexOf("group-title=\"Tamil\""), "sorted by group");
+        check(m3u.contains("tvg-chno=\"1\"") && m3u.contains("misc/logos/320/1.png") && m3u.contains(",Star Sports  HD\n"), "m3u tags");
+        check(e.jobFileName(job).matches("My_Portal_\\d{8}_\\d{4}\\.m3u"), "file name: " + e.jobFileName(job));
 
-        r = get(o + "/portal.m3u?" + cfg + "&" + q("keywords", "tamil"));
-        check(r[1].split("#EXTINF").length - 1 == 2, "keyword filter");
-        r = get(o + "/portal.m3u?" + cfg + "&cats=other,2");
-        check(r[1].split("#EXTINF").length - 1 == 2, "cats filter");
+        // ---- expired token mid-way -> auto relogin during export
+        new java.net.URL("http://127.0.0.1:" + pp + "/expire").openStream().close();
+        x = call("export", "{\"key\":\"" + key + "\",\"filter\":{\"cats\":[\"1\"]}}");
+        st = finish(String.valueOf(x.get("job")));
+        check(((Number) st.get("ok")).intValue() == 2, "export survives expired token: " + MiniJson.write(st));
 
-        // play: take first play URL from the playlist and follow it like a player
-        String playUrl = null;
-        for (String line : get(o + "/portal.m3u?" + cfg + "&" + q("keywords", "tamil")).clone()[1].split("\n")) {
-            if (line.startsWith("http")) {
-                playUrl = line;
-                break;
-            }
-        }
-        r = get(playUrl);
-        check(r[0].equals("302") && r[2].equals("http://127.0.0.1:" + pp + "/stream/1.ts?token=abc") || r[2].contains("/hls/5.m3u8")
-                || r[2].contains("/stream/"), "play redirects to real stream: " + r[0] + " " + r[2]);
+        // ---- errors
+        Map<String, Object> bad = call("connect", "{\"source\":" + portal(pp, "00:1A:79:FF:FF:FF") + "}");
+        check(String.valueOf(bad.get("error")).contains("Handshake failed") && String.valueOf(bad.get("error")).contains("refused"), "wrong MAC: " + bad.get("error"));
+        bad = call("connect", "{\"source\":{\"type\":\"portal\",\"url\":\"http://127.0.0.1:9/c/\",\"mac\":\"00:1A:79:00:00:01\"}}");
+        check(String.valueOf(bad.get("error")).contains("Cannot reach portal"), "dead portal: " + bad.get("error"));
+        bad = call("connect", "{\"source\":{\"type\":\"portal\",\"url\":\"x.com\",\"mac\":\"00:11\"}}");
+        check(String.valueOf(bad.get("error")).contains("MAC"), "bad MAC: " + bad.get("error"));
+        bad = call("list", "{\"key\":\"nope\"}");
+        check("nosession".equals(bad.get("code")), "unknown session -> nosession");
+        bad = call("export", "{\"key\":\"" + key + "\",\"filter\":{\"q\":\"zzzz\"}}");
+        check(String.valueOf(bad.get("error")).contains("No channels"), "empty selection");
+        bad = call("status", "{\"job\":\"nope\"}");
+        check("nojob".equals(bad.get("code")), "unknown job");
+        check(e.call("bogus", "{}").contains("Unknown method"), "unknown method");
+        check(e.call("list", "not json").contains("error"), "garbage args handled");
 
-        // token expiry -> transparent re-login
-        get("http://127.0.0.1:" + pp + "/expire");
-        r = get(playUrl);
-        check(r[0].equals("302") && r[2].startsWith("http://127.0.0.1:" + pp + "/"), "play survives token expiry");
+        // ---- cancel + retry
+        // (portal that accepts nothing: all links fail -> stops early with a clear message)
+        Map<String, Object> c2 = call("connect", "{\"source\":" + portal(pp, "00:1A:79:00:00:01").replace("\"sn\":\"SN1\"", "\"sn\":\"SN2\"") + "}");
+        String key2 = String.valueOf(c2.get("key"));
+        x = call("export", "{\"key\":\"" + key2 + "\",\"filter\":{}}");
+        String j2 = String.valueOf(x.get("job"));
+        call("cancel", "{\"job\":\"" + j2 + "\"}");
+        st = finish(j2);
+        check(Boolean.TRUE.equals(st.get("finished")), "cancel -> finishes: " + MiniJson.write(st));
+        call("retry", "{\"job\":\"" + j2 + "\"}");
+        st = finish(j2);
+        check(((Number) st.get("ok")).intValue() == 5 && e.jobResult(j2).split("#EXTINF").length - 1 == 5, "retry completes the rest: " + MiniJson.write(st));
 
-        r = get(o + "/api/portal/test?" + q("url", "http://127.0.0.1:" + pp + "/stalker_portal/c/") + "&" + q("mac", "00:1A:79:FF:FF:FF"));
-        check(r[0].equals("502") && r[1].contains("Handshake failed") && r[1].contains("refused"), "wrong MAC -> clear error: " + r[1]);
+        // ---- Xtream (direct links)
+        String xs = "{\"type\":\"xtream\",\"name\":\"X\",\"url\":\"127.0.0.1:" + pp + "\",\"username\":\"user\",\"password\":\"pass\"}";
+        Map<String, Object> xc = call("connect", "{\"source\":" + xs + "}");
+        check(xc.get("error") == null && ((Number) xc.get("channels")).intValue() == 2, "xtream connect: " + MiniJson.write(xc));
+        String xkey = String.valueOf(xc.get("key"));
+        x = call("export", "{\"key\":\"" + xkey + "\",\"filter\":{\"cats\":[\"10\"]}}");
+        st = finish(String.valueOf(x.get("job")));
+        String xm = e.jobResult(String.valueOf(x.get("job")));
+        check(xm != null && xm.contains("http://127.0.0.1:" + pp + "/live/user/pass/100.ts") && !xm.contains("101.ts")
+                && xm.contains("x-tvg-url=\"http://127.0.0.1:" + pp + "/xmltv.php"), "xtream export: " + xm);
+        bad = call("connect", "{\"source\":" + xs.replace("\"password\":\"pass\"", "\"password\":\"WRONG\"") + "}");
+        check(bad.get("error") != null, "xtream wrong password -> error: " + bad.get("error"));
 
-        r = get(o + "/portal.m3u?url=&mac=");
-        check(r[0].equals("400"), "missing fields -> 400");
-        r = get(o + "/portal.m3u?" + q("url", "http://127.0.0.1:" + pp + "/c/") + "&" + q("mac", "00:11"));
-        check(r[0].equals("400") && r[1].contains("MAC"), "bad MAC -> 400");
-        r = get(o + "/portal/play?cfg=%25%25&cmd=x");
-        check(r[0].equals("400"), "bad cfg -> 400");
-        r = get(o + "/api/portal/test?" + q("url", "http://127.0.0.1:9/stalker_portal/c/") + "&" + q("mac", "00:1A:79:00:00:01"));
-        check(r[0].equals("502") && r[1].contains("Cannot reach portal"), "dead portal -> clean error: " + r[1]);
-
-        // Xtream
-        r = get(o + "/127.0.0.1:" + pp + "/user/pass.m3u?keywords=tamil");
-        check(r[0].equals("200") && r[1].contains("http://127.0.0.1:" + pp + "/live/user/pass/100.ts")
-                && !r[1].contains("101.ts") && r[1].contains("x-tvg-url="), "xtream playlist: " + r[1]);
-        r = get(o + "/127.0.0.1:" + pp + "/user/WRONG.m3u");
-        check(r[0].equals("502") || r[0].equals("401"), "xtream bad login -> error (" + r[0] + ")");
-        r = get(o + "/api/xtream/categories?" + q("url", "127.0.0.1:" + pp) + "&username=user&password=pass&exclude=adult");
-        check(r[1].contains("\"matched\":true") && r[1].contains("\"matched\":false"), "xtream categories");
-
-        // security
-        try (java.net.Socket so = new java.net.Socket("127.0.0.1", port)) {
-            so.getOutputStream().write("GET / HTTP/1.1\r\nHost: evil.example\r\n\r\n".getBytes());
-            String first = new java.io.BufferedReader(new java.io.InputStreamReader(so.getInputStream())).readLine();
-            check(first != null && first.contains("403"), "foreign Host header rejected: " + first);
-        }
-        r = get(o + "/nope");
-        check(r[0].equals("404"), "404");
-
-        // MiniJson
-        Object j = MiniJson.parse("{\"a\":[1,2.5,\"x\\u0041\\n\",true,null],\"b\":{}}");
-        check(MiniJson.map(j).get("a") instanceof java.util.List && "xA\n".equals(MiniJson.list(MiniJson.map(j).get("a")).get(2)),
-                "MiniJson parse");
-        check(MiniJson.parseLenient("junk{\"js\":{}}junk") != null, "MiniJson lenient");
-
-        srv.stop();
         System.out.println(fails == 0 ? "\nALL OK" : "\nFAILED: " + fails);
         System.exit(fails == 0 ? 0 : 1);
     }
