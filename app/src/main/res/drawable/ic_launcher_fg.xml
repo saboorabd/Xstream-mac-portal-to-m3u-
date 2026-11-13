@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- two sources (Xtream + MAC) -->
+    <path android:fillColor="#99FFFFFF" android:pathData="M28,38H36A4,4 0 0 1 40,42V46A4,4 0 0 1 36,50H28A4,4 0 0 1 24,46V42A4,4 0 0 1 28,38Z" />
+    <path android:fillColor="#99FFFFFF" android:pathData="M28,58H36A4,4 0 0 1 40,62V66A4,4 0 0 1 36,70H28A4,4 0 0 1 24,66V62A4,4 0 0 1 28,58Z" />
+    <!-- merge into one playlist -->
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="3" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M42,44L49,53M42,64L49,55" />
+    <!-- playlist card with play -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M61,37H77A9,9 0 0 1 86,46V62A9,9 0 0 1 77,71H61A9,9 0 0 1 52,62V46A9,9 0 0 1 61,37Z" />
+    <path android:fillColor="#FF6D28D9" android:pathData="M63,45L63,63L77.5,54Z" />
+</vector>
