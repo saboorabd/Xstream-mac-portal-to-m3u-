@@ -66,6 +66,8 @@ public final class Http {
             r.status = code;
             if (in != null) {
                 try {
+                    String ce = c.getContentEncoding();
+                    if (ce != null && ce.toLowerCase().contains("gzip")) in = new java.util.zip.GZIPInputStream(in);
                     r.body = new String(readAll(in), StandardCharsets.UTF_8);
                 } finally {
                     in.close();

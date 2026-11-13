@@ -39,7 +39,7 @@ public final class Xtream {
     private static Object api(String base, String user, String pass, String action) {
         Map<String, String> h = new HashMap<>();
         h.put("User-Agent", "okhttp/4.9.0");
-        h.put("Accept-Encoding", "identity");
+        h.put("Accept-Encoding", "gzip");
         Http.Resp r;
         try {
             r = Http.get(base + "/player_api.php?username=" + Util.enc(user) + "&password=" + Util.enc(pass)
@@ -76,6 +76,7 @@ public final class Xtream {
             if (sid.isEmpty()) continue;
             String cid = MiniJson.str(s.get("category_id"));
             Item it = new Item();
+            it.sid = sid;
             it.name = MiniJson.str(s.get("name")).trim();
             if (it.name.isEmpty()) it.name = "Unknown";
             it.logo = MiniJson.str(s.get("stream_icon"));

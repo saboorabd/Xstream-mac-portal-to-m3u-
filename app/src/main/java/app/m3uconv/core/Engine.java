@@ -1,5 +1,6 @@
 package app.m3uconv.core;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +41,9 @@ public final class Engine {
         String expires = "";
         String epg = "";
         long ts = System.currentTimeMillis();
+        long loadedAt = System.currentTimeMillis();
+        boolean fromCache;
+        Map<String, Object> catIds;
     }
 
     private static final class Row {
@@ -78,6 +82,15 @@ public final class Engine {
         }
     }
 
+    private volatile File cacheDir;
+    private volatile String phase = "";
+    static final long MEM_TTL = 30 * 60 * 1000L, DISK_TTL = 6 * 60 * 60 * 1000L;
+
+    /** Where the channel list of each source is remembered, so opening a source again is instant. */
+    public void setCacheDir(File d) {
+        cacheDir = d;
+    }
+
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
     private final Map<String, Job> jobs = new ConcurrentHashMap<>();
 
@@ -96,6 +109,7 @@ public final class Engine {
                 case "retry": r = retry(a); break;
                 case "resolve": r = resolve(a); break;
                 case "host": r = host(a); break;
+                case "phase": r = phaseInfo(); break;
                 default: throw new IllegalArgumentException("Unknown method " + method);
             }
             return MiniJson.write(r);
@@ -159,8 +173,19 @@ public final class Engine {
         canon.remove("epg");
         String key = Util.hex("SHA-256", MiniJson.write(canon));
         Session sess = sessions.get(key);
-        if (sess == null || force || System.currentTimeMillis() - sess.ts > 5 * 60 * 1000L) {
-            sess = type.equals("xtream") ? connectXtream(src) : connectPortal(src);
+        if (sess == null || force || System.currentTimeMillis() - sess.ts > MEM_TTL) {
+            Session c = force ? null : readCache(key, src);
+            if (c != null) {
+                sess = c;
+            } else {
+                phase = "Connecting…";
+                try {
+                    sess = type.equals("xtream") ? connectXtream(src) : connectPortal(src);
+                } finally {
+                    phase = "";
+                }
+                writeCache(key, sess);
+            }
             if (sessions.size() > 8) sessions.clear();
             sessions.put(key, sess);
         }
@@ -170,18 +195,131 @@ public final class Engine {
         r.put("channels", sess.items.size());
         r.put("categories", sess.cats);
         r.put("expires", sess.expires);
+        r.put("loadedAt", sess.loadedAt);
+        r.put("cached", sess.fromCache);
+        r.put("catIds", catIds(sess));
+        List<Object> sids = new ArrayList<>(sess.items.size());
+        for (Item it : sess.items) sids.add(it.sid.isEmpty() ? it.name : it.sid);
+        r.put("sids", sids);
         return r;
     }
 
+    private Object phaseInfo() {
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("phase", phase);
+        return r;
+    }
+
+    private static Map<String, Object> catIds(Session sess) {
+        if (sess.catIds == null) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            for (Item it : sess.items) {
+                @SuppressWarnings("unchecked")
+                List<Object> l = (List<Object>) m.get(it.groupId);
+                if (l == null) m.put(it.groupId, l = new ArrayList<>());
+                l.add(it.uid);
+            }
+            sess.catIds = m;
+        }
+        return sess.catIds;
+    }
+
+    // ---------------------------------------------------------------- disk cache
+    private File cacheFile(String key) {
+        File d = cacheDir;
+        return d == null ? null : new File(d, "src_" + key.substring(0, 24) + ".json.gz");
+    }
+
+    private void writeCache(String key, Session sess) {
+        File f = cacheFile(key);
+        if (f == null) return;
+        try {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("ts", sess.loadedAt);
+            m.put("type", sess.type);
+            m.put("cats", sess.cats);
+            m.put("expires", sess.expires);
+            m.put("epg", sess.epg);
+            List<Object> rows = new ArrayList<>(sess.items.size());
+            for (Item it : sess.items) {
+                List<Object> r = new ArrayList<>(8);
+                r.add(it.name);
+                r.add(it.group);
+                r.add(it.groupId);
+                r.add(it.logo);
+                r.add(it.tvgId);
+                r.add(it.chno);
+                r.add(it.cmd);
+                r.add(it.url);
+                r.add(it.sid);
+                rows.add(r);
+            }
+            m.put("items", rows);
+            File tmp = new File(f.getPath() + ".tmp");
+            try (java.io.OutputStream os = new java.util.zip.GZIPOutputStream(new java.io.FileOutputStream(tmp))) {
+                os.write(MiniJson.write(m).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            if (!tmp.renameTo(f)) {
+                f.delete();
+                tmp.renameTo(f);
+            }
+        } catch (Exception ignored) {                     // the cache is only a speed-up
+        }
+    }
+
+    private Session readCache(String key, Map<String, Object> src) {
+        File f = cacheFile(key);
+        if (f == null || !f.isFile()) return null;
+        try {
+            Map<String, Object> m;
+            try (java.io.InputStream in = new java.util.zip.GZIPInputStream(new java.io.FileInputStream(f))) {
+                m = MiniJson.map(MiniJson.parse(new String(Http.readAll(in), java.nio.charset.StandardCharsets.UTF_8)));
+            }
+            if (m == null) return null;
+            long ts = Long.parseLong(MiniJson.str(m.get("ts")));
+            if (System.currentTimeMillis() - ts > DISK_TTL) return null;
+            Session sess = new Session();
+            sess.type = MiniJson.str(m.get("type"));
+            sess.loadedAt = ts;
+            sess.fromCache = true;
+            sess.expires = MiniJson.str(m.get("expires"));
+            sess.epg = MiniJson.str(m.get("epg"));
+            sess.cats = MiniJson.list(m.get("cats"));
+            sess.items = new ArrayList<>();
+            for (Object o : MiniJson.list(m.get("items"))) {
+                List<Object> r = MiniJson.list(o);
+                Item it = new Item();
+                it.name = MiniJson.str(r.get(0));
+                it.group = MiniJson.str(r.get(1));
+                it.groupId = MiniJson.str(r.get(2));
+                it.logo = MiniJson.str(r.get(3));
+                it.tvgId = MiniJson.str(r.get(4));
+                it.chno = MiniJson.str(r.get(5));
+                it.cmd = MiniJson.str(r.get(6));
+                it.url = MiniJson.str(r.get(7));
+                it.sid = r.size() > 8 ? MiniJson.str(r.get(8)) : "";
+                sess.items.add(it);
+            }
+            if (sess.items.isEmpty() || sess.cats == null) return null;
+            number(sess.items);
+            if (sess.type.equals("portal")) {             // not logged in yet: it happens by itself on the first real request
+                sess.portal = new Stalker(s(src, "url"), s(src, "mac"), s(src, "d1"), s(src, "d2"), s(src, "sn"), 90000);
+            }
+            return sess;
+        } catch (Exception e) {
+            f.delete();
+            return null;
+        }
+    }
+
     private Session connectPortal(Map<String, Object> src) {
-        Stalker p = new Stalker(s(src, "url"), s(src, "mac"), s(src, "d1"), s(src, "d2"), s(src, "sn"), 40000);
-        p.login();
-        List<Stalker.Channel> chans = p.items();
+        Stalker p = new Stalker(s(src, "url"), s(src, "mac"), s(src, "d1"), s(src, "d2"), s(src, "sn"), 90000);
+        Stalker.Loaded ld = p.loadAll(x -> phase = x);
         Session sess = new Session();
         sess.type = "portal";
         sess.portal = p;
-        sess.items = new ArrayList<>();
-        for (Stalker.Channel c : chans) {
+        sess.items = new ArrayList<>(ld.items.size());
+        for (Stalker.Channel c : ld.items) {
             Item it = new Item();
             it.name = c.name;
             it.group = c.group;
@@ -190,17 +328,18 @@ public final class Engine {
             it.tvgId = c.tvgId;
             it.chno = c.chno;
             it.cmd = c.cmd;
+            it.sid = c.id;
             sess.items.add(it);
         }
         sess.cats = new ArrayList<>();
-        for (Stalker.Category c : p.categories()) {
+        for (Stalker.Category c : ld.cats) {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", c.id);
             m.put("name", c.name);
             m.put("count", c.count);
             sess.cats.add(m);
         }
-        sess.expires = p.accountExpires();
+        sess.expires = ld.expires;
         sess.epg = "";
         number(sess.items);
         return sess;
@@ -212,6 +351,7 @@ public final class Engine {
         if (user.isEmpty() || pass.isEmpty()) throw new IllegalArgumentException("Username and password are required");
         String kind = s(src, "kind").equals("vod") ? "vod" : "live";
         String fmt = s(src, "fmt").equals("m3u8") ? "m3u8" : "ts";
+        phase = "Loading channels…";
         Xtream.Result r = Xtream.load(base, user, pass, kind, fmt);
         Session sess = new Session();
         sess.type = "xtream";
@@ -278,6 +418,11 @@ public final class Engine {
         Map<String, Object> r = new LinkedHashMap<>();
         r.put("total", sel.size());
         r.put("rows", rows);
+        if (off == 0) {                                  // every id in the current view, for "select all shown"
+            List<Object> ids = new ArrayList<>(sel.size());
+            for (Item it : sel) ids.add(it.uid);
+            r.put("ids", ids);
+        }
         return r;
     }
 
@@ -309,7 +454,24 @@ public final class Engine {
 
     private Object export(Map<String, Object> a) {
         Session sess = session(a);
-        List<Item> sel = select(sess, MiniJson.map(a.get("filter")));
+        List<Item> sel;
+        List<Object> pick = MiniJson.list(a.get("ids"));
+        if (pick != null) {                              // hand-picked channels
+            Set<Integer> want = new HashSet<>();
+            for (Object o : pick) {
+                try {
+                    want.add(Integer.parseInt(MiniJson.str(o)));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            Map<String, Object> f = new LinkedHashMap<>();
+            Map<String, Object> fin = MiniJson.map(a.get("filter"));
+            if (fin != null) f.put("exclude", fin.get("exclude"));        // exclude words still protect the export
+            sel = new ArrayList<>();
+            for (Item it : select(sess, f)) if (want.contains(it.uid)) sel.add(it);
+        } else {
+            sel = select(sess, MiniJson.map(a.get("filter")));
+        }
         if (sel.isEmpty()) throw new IllegalArgumentException("No channels selected");
         Map<String, Object> o = MiniJson.map(a.get("opts"));
         if (o == null) o = new LinkedHashMap<>();
