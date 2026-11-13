@@ -62,6 +62,10 @@ public final class Engine {
         volatile int runTotal;
         volatile boolean finished, cancelled;
         volatile String error, m3u;
+        volatile Map<String, String> files;          // file name -> playlist text (combined first, then one per category)
+        volatile Map<String, Integer> counts;
+        String base = "playlist";
+        boolean split = true;
         volatile long startMs, endMs;
 
         Job(Session s, int threads, int retries, boolean sort, String epg, String fileName) {
@@ -91,6 +95,7 @@ public final class Engine {
                 case "cancel": r = cancel(a); break;
                 case "retry": r = retry(a); break;
                 case "resolve": r = resolve(a); break;
+                case "host": r = host(a); break;
                 default: throw new IllegalArgumentException("Unknown method " + method);
             }
             return MiniJson.write(r);
@@ -116,6 +121,14 @@ public final class Engine {
     public String jobResult(String id) {
         Job j = jobs.get(id);
         return j == null ? null : j.m3u;
+    }
+
+    /** One generated file of a finished job (null name = the combined playlist). */
+    public String jobFile(String id, String name) {
+        Job j = jobs.get(id);
+        if (j == null) return null;
+        if (name == null || name.isEmpty() || j.files == null) return j.m3u;
+        return j.files.get(name);
     }
 
     public String jobFileName(String id) {
@@ -307,6 +320,8 @@ public final class Engine {
         if (!epg.toLowerCase(Locale.ROOT).startsWith("http")) epg = sess.epg;
         String stamp = new SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(new Date());
         final Job job = new Job(sess, threads, retries, sort, epg, safeName(s(a, "name")) + "_" + stamp + ".m3u");
+        job.base = safeName(s(a, "name"));
+        job.split = !Boolean.FALSE.equals(o.get("split"));
         for (Item it : sel) job.rows.add(new Row(it));
         String id = UUID.randomUUID().toString().substring(0, 8);
         if (jobs.size() >= 6) jobs.clear();
@@ -386,7 +401,7 @@ public final class Engine {
                 job.error = job.cancelled && job.failed.get() < 20 ? "Cancelled"
                         : "Portal gave no playable links - account expired, blocked, or too many devices on this MAC?";
             } else {
-                job.m3u = build(job);
+                build(job);
             }
         } catch (PortalException e) {
             job.error = e.getMessage();
@@ -399,7 +414,7 @@ public final class Engine {
         }
     }
 
-    private static String build(Job job) {
+    private static void build(Job job) {
         List<M3u.Entry> entries = new ArrayList<>();
         for (Row r : job.rows) {
             if (r.url.isEmpty()) continue;
@@ -418,7 +433,31 @@ public final class Engine {
                 return g != 0 ? g : x.name.toLowerCase(Locale.ROOT).compareTo(y.name.toLowerCase(Locale.ROOT));
             });
         }
-        return M3u.build(entries, job.epg);
+        Map<String, String> files = new LinkedHashMap<>();
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        String all = M3u.build(entries, job.epg);
+        String allName = job.base + "_Full_Channels.m3u";
+        files.put(allName, all);
+        counts.put(allName, entries.size());
+        if (job.split) {
+            Map<String, List<M3u.Entry>> byGroup = new LinkedHashMap<>();
+            for (M3u.Entry e : entries) {
+                List<M3u.Entry> l = byGroup.get(e.group);
+                if (l == null) byGroup.put(e.group, l = new ArrayList<>());
+                l.add(e);
+            }
+            for (Map.Entry<String, List<M3u.Entry>> g : byGroup.entrySet()) {
+                String nm = safeName(g.getKey());
+                if (nm.equals("playlist")) nm = "Group";
+                String fn = job.base + "_" + nm + ".m3u";
+                for (int n = 2; files.containsKey(fn); n++) fn = job.base + "_" + nm + "_" + n + ".m3u";
+                files.put(fn, M3u.build(g.getValue(), job.epg));
+                counts.put(fn, g.getValue().size());
+            }
+        }
+        job.counts = counts;
+        job.files = files;
+        job.m3u = all;
     }
 
     private Object status(Map<String, Object> a) {
@@ -434,6 +473,17 @@ public final class Engine {
         if (j.error != null) r.put("error", j.error);
         r.put("elapsedMs", (j.finished ? j.endMs : System.currentTimeMillis()) - j.startMs);
         r.put("hasFile", j.m3u != null);
+        if (j.files != null && j.m3u != null) {
+            List<Object> fl = new ArrayList<>();
+            for (Map.Entry<String, String> f : j.files.entrySet()) {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("name", f.getKey());
+                m.put("count", j.counts.get(f.getKey()));
+                m.put("size", f.getValue().length());
+                fl.add(m);
+            }
+            r.put("files", fl);
+        }
         return r;
     }
 
@@ -448,7 +498,105 @@ public final class Engine {
         if (!j.finished) throw new IllegalArgumentException("Still running");
         j.cancelled = false;
         j.m3u = null;
+        j.files = null;
         startRun(j);
         return new LinkedHashMap<String, Object>();
+    }
+
+    // ---------------------------------------------------------------- hosting (secret GitHub Gist)
+    private static String ghError(Http.Resp r) {
+        String msg = "";
+        try {
+            msg = MiniJson.str(MiniJson.map(MiniJson.parseLenient(r.body)).get("message"));
+        } catch (RuntimeException ignored) {
+        }
+        switch (r.status) {
+            case 401:
+                return "GitHub rejected the token - create a token that has the 'gist' permission";
+            case 403:
+            case 429:
+                return "GitHub refused (token lacks the 'gist' permission, or rate limit). " + msg;
+            case 422:
+                return "GitHub rejected the files: " + msg;
+            default:
+                return "GitHub error HTTP " + r.status + (msg.isEmpty() ? "" : ": " + msg);
+        }
+    }
+
+    /**
+     * Uploads the finished playlist(s) to a SECRET gist and returns permanent links.
+     * Pass the previous gistId to update the same gist, so the links stay the same after every refresh.
+     */
+    private Object host(Map<String, Object> a) {
+        Job j = job(a);
+        if (j.files == null || !j.finished) throw new IllegalArgumentException("Export first");
+        String token = s(a, "token");
+        if (token.isEmpty()) throw new IllegalArgumentException("GitHub token is missing - add it in Settings");
+        String api = s(a, "api");
+        if (api.isEmpty()) api = "https://api.github.com";
+        String gistId = s(a, "gistId");
+        Map<String, Object> files = new LinkedHashMap<>();
+        for (Map.Entry<String, String> f : j.files.entrySet()) {
+            Map<String, Object> c = new LinkedHashMap<>();
+            c.put("content", f.getValue());
+            files.put(f.getKey(), c);
+        }
+        List<Object> prev = MiniJson.list(a.get("prevFiles"));
+        if (prev != null) for (Object o : prev) if (!files.containsKey(MiniJson.str(o))) files.put(MiniJson.str(o), null);   // drop stale category files
+        Map<String, String> h = new LinkedHashMap<>();
+        h.put("Authorization", "Bearer " + token);
+        h.put("Accept", "application/vnd.github+json");
+        h.put("User-Agent", "M3U-Converter");
+        h.put("X-GitHub-Api-Version", "2022-11-28");
+        h.put("Content-Type", "application/json");
+        Http.Resp r = null;
+        boolean relinked = false;
+        try {
+            if (!gistId.isEmpty()) {
+                Map<String, Object> body = new LinkedHashMap<>();
+                body.put("description", "M3U Converter - " + j.base);
+                body.put("files", files);
+                r = Http.request("PATCH", api + "/gists/" + Util.enc(gistId), h, MiniJson.write(body).getBytes(java.nio.charset.StandardCharsets.UTF_8), 120000);
+                if (r.status == 404 || r.status == 405) {          // gist was deleted -> make a new one
+                    r = null;
+                    relinked = true;
+                }
+            }
+            if (r == null) {
+                Map<String, Object> mk = new LinkedHashMap<>();
+                for (Map.Entry<String, Object> f : files.entrySet()) if (f.getValue() != null) mk.put(f.getKey(), f.getValue());
+                Map<String, Object> body = new LinkedHashMap<>();
+                body.put("description", "M3U Converter - " + j.base);
+                body.put("public", false);
+                body.put("files", mk);
+                r = Http.request("POST", api + "/gists", h, MiniJson.write(body).getBytes(java.nio.charset.StandardCharsets.UTF_8), 120000);
+            }
+        } catch (java.io.IOException e) {
+            throw new EngineError("github", "Cannot reach GitHub - check your internet (" + e.getMessage() + ")");
+        }
+        if (r.status != 200 && r.status != 201) throw new EngineError("github", ghError(r));
+        Map<String, Object> g = MiniJson.map(MiniJson.parseLenient(r.body));
+        Map<String, Object> gf = g == null ? null : MiniJson.map(g.get("files"));
+        if (gf == null) throw new EngineError("github", "GitHub sent an unexpected reply");
+        List<Object> out = new ArrayList<>();
+        String allUrl = "";
+        for (String name : j.files.keySet()) {
+            Map<String, Object> f = MiniJson.map(gf.get(name));
+            if (f == null) continue;
+            String raw = MiniJson.str(f.get("raw_url")).replaceFirst("/raw/[0-9a-fA-F]{40}/", "/raw/");   // no commit id = always the latest
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("name", name);
+            m.put("count", j.counts.get(name));
+            m.put("url", raw);
+            out.add(m);
+            if (allUrl.isEmpty()) allUrl = raw;
+        }
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("gistId", MiniJson.str(g.get("id")));
+        res.put("page", MiniJson.str(g.get("html_url")));
+        res.put("all", allUrl);
+        res.put("files", out);
+        res.put("relinked", relinked);
+        return res;
     }
 }
