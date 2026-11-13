@@ -78,6 +78,18 @@ input.in::placeholder{color:#5f5f78}
 .ch .pl{width:34px;height:34px;border-radius:50%;background:var(--s2);display:grid;place-items:center;color:var(--mut);flex:none}
 .ch .pl svg{width:15px;height:15px;fill:currentColor;stroke:none}
 .more{margin:14px 0}
+.linkbox{background:var(--s2);border:1px solid rgba(139,92,246,.45);border-radius:16px;padding:12px 14px;margin:14px 0 10px}
+.linkbox .u{font:12.5px/1.4 ui-monospace,Menlo,monospace;color:#c4b5fd;word-break:break-all;margin:4px 0 12px;max-height:3.9em;overflow:hidden}
+.linkbox .k{font-size:12px;color:var(--mut);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.linkbox .nt{color:var(--mut);font-size:12px;margin-top:10px}
+.tri{display:flex;gap:8px}.tri .btn{flex:1;height:42px;padding:0 8px;font-size:14px}
+.sec{color:var(--mut);font-size:12px;font-weight:650;letter-spacing:.4px;text-transform:uppercase;margin:16px 2px 6px}
+.fl{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)}
+.fl .n{font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fl .c{color:var(--mut);font-size:12px}
+.mini{height:34px;padding:0 11px;border-radius:11px;background:var(--s2);border:1px solid var(--bd);font-size:12.5px;font-weight:600;flex:none}
+.mini.p{color:#c4b5fd;border-color:rgba(139,92,246,.45)}
+.warn{color:var(--wa);background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:14px;padding:10px 12px;font-size:13px;margin:12px 0;word-break:break-word}
+.warn.n{color:var(--mut);background:var(--s2);border-color:var(--bd)}
 .err{border-color:rgba(251,113,133,.35);background:rgba(251,113,133,.07)}
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:12px 18px calc(12px + var(--sb));background:rgba(11,11,18,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--bd);display:none;align-items:center;gap:12px}
 .bottom.on{display:flex}
@@ -114,7 +126,8 @@ input.in::placeholder{color:#5f5f78}
 
 <section id="home" class="screen on">
   <div class="bar"><div class="logo"><svg viewBox="0 0 24 24"><path d="M8 5l12 7-12 7z"/></svg></div>
-    <div class="grow"><h1>M3U Converter</h1><div class="sub">Real stream links · no server</div></div></div>
+    <div class="grow"><h1>M3U Converter</h1><div class="sub">Real stream links · no server</div></div>
+    <button class="icon" data-act="settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button></div>
   <div id="srcList"></div>
   <button id="fab" class="btn pri fab hide" data-act="add"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add source</button>
 </section>
@@ -169,6 +182,8 @@ const IC={
  trash:'<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>',
  refresh:'<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg>',
  folder:'<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>',
+ link:'<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg>',
+ copy:'<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>',
  share:'<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg>',
  art:'<svg class="art" viewBox="0 0 160 160"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset=".6" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="22" y="34" width="116" height="80" rx="18" fill="#191927" stroke="none"/><rect x="22" y="34" width="116" height="80" rx="18" stroke="url(#g)" stroke-width="3" fill="none"/><path d="M72 62l28 16-28 16z" fill="url(#g)" stroke="none"/><path d="M58 128h44" stroke="url(#g)" stroke-width="4"/><circle cx="130" cy="30" r="5" fill="#22d3ee" stroke="none"/><circle cx="30" cy="124" r="3" fill="#8b5cf6" stroke="none"/></svg>'
 };
@@ -180,6 +195,7 @@ const native=(m,a)=>new Promise(r=>{const id='c'+(++seq);pend[id]=r;try{Android.
 
 /* ---------- state ---------- */
 let sources=[],cur=null,conn=null,filter={cats:[],q:'',exclude:''},opts={threads:8,sort:true};
+let gh='',lastFiles=[],lastStat=null,hostRes=null,hostErr='';
 let total=0,shown=0,reqId=0,job=null,ftype='portal',editing=null,exporting=false,connState='loading',connErr='';
 const persist=()=>native('kvSet',{key:'sources',value:JSON.stringify(sources)});
 const uid=()=>Math.random().toString(36).slice(2,9);
@@ -210,6 +226,7 @@ function renderHome(){
    <div class="grow"><div class="name">${esc(s.name)}</div><div class="meta"><span class="chip t">${s.type==='xtream'?'Xtream':'MAC'}</span><span>${esc(host(s.url))}</span>${s.expires?`<span class="chip ex">exp ${esc(s.expires)}</span>`:''}</div></div>
    <button class="icon" data-act="menu" data-id="${s.id}">${IC.dots}</button></div>
   <div class="fresh"><span class="dot ${f}"></span><span>${info}</span></div>
+  ${s.host?`<button class="chip on" style="margin:-4px 0 12px" data-act="cphome" data-id="${s.id}">${IC.link.replace('<svg','<svg width="14" height="14"')}Copy hosted link</button>`:''}
   <div class="actions"><button class="btn" data-act="open" data-id="${s.id}">Browse</button><button class="btn pri" data-act="quick" data-id="${s.id}">${IC.refresh}Refresh M3U</button></div></div>`}).join('')}
 
 /* ---------- add / edit ---------- */
@@ -289,10 +306,12 @@ function optionsSheet(){const x=cur.type==='xtream';
  <label class="f"><span>EPG (XMLTV) URL</span><input class="in" id="o_epg" value="${esc(cur.epg||'')}" placeholder="optional" autocapitalize="off" autocomplete="off"></label>
  ${x?'':`<div class="opt"><div><div style="font-weight:600">Speed</div><div class="sub">More parallel requests = faster, but some portals may block.</div></div><select class="in" id="o_th" style="width:130px"><option value="4">Gentle</option><option value="8">Balanced</option><option value="14">Fast</option></select></div>`}
  <div class="opt"><div style="font-weight:600">Sort A–Z by category</div><button class="sw ${opts.sort?'on':''}" id="o_sort" data-act="sw"></button></div>
+ <div class="opt"><div><div style="font-weight:600">Category-wise files</div><div class="sub">One M3U per category + the full M3U.</div></div><button class="sw ${opts.split!==false?'on':''}" id="o_split" data-act="sw"></button></div>
+ <div class="opt"><div><div style="font-weight:600">Host as link</div><div class="sub">${gh?'Secret GitHub Gist - same link after every refresh.':'Add your GitHub token in Settings first.'}</div></div><button class="sw ${gh&&opts.host!==false?'on':''}" id="o_host" data-act="sw"></button></div>
  <div class="sheetbtns"><button class="btn pri" data-act="optsave">Apply</button></div>`);
  if(!x)$('#o_th').value=String(opts.threads)}
 function optSave(){const ex=$('#o_ex').value.trim();const changed=ex!==(filter.exclude||'');filter.exclude=ex;cur.epg=$('#o_epg').value.trim();
- if($('#o_th'))opts.threads=+$('#o_th').value;opts.sort=$('#o_sort').classList.contains('on');
+ if($('#o_th'))opts.threads=+$('#o_th').value;opts.sort=$('#o_sort').classList.contains('on');opts.split=$('#o_split').classList.contains('on');opts.host=$('#o_host').classList.contains('on');
  cur.filter=filter;cur.opts=opts;persist();closeSheet();if(changed)refreshList(true)}
 
 /* ---------- export ---------- */
@@ -304,14 +323,25 @@ function exSheet(p){
   <div class="stat"><span>${p.total?`${p.done.toLocaleString()} / ${p.total.toLocaleString()}`:'Please wait'}${p.failed?` · ${p.failed} failed`:''}</span><span>${p.eta||''}</span></div>
   <p class="ctr" style="margin:14px 0 0;font-size:12.5px">Keep the app open until it finishes.</p>
   <div class="sheetbtns"><button class="btn" data-act="cancelx">Cancel</button></div>`}
+ else if(p.phase==='host'){
+  h=`<h2>Hosting your link…</h2><p style="margin-bottom:0">Uploading to a secret GitHub Gist</p><div class="prog ind"><i></i></div>`}
  else if(p.phase==='done'){
+  const base=lastFiles.length?lastFiles[0].name.replace(/_Full_Channels\.m3u$/,''):'';
+  const lab=(f,i)=>i===0?'All channels':f.name.replace(/\.m3u$/,'').slice(base.length+1).replace(/_/g,' ');
+  const hf=n=>hostRes&&hostRes.files.find(x=>x.name===n);
   h=`<div class="okc">${IC.check}</div><h2 class="ctr">${p.ok.toLocaleString()} real links ready</h2>
   <p class="ctr" style="margin-bottom:0">${p.stopped?'Stopped early. ':''}Saved to <b style="color:var(--tx)">Downloads/${esc(p.name)}</b></p>
   ${p.lost>0?`<p class="ctr" style="color:var(--wa);margin:8px 0 0">${p.lost} channel${p.lost>1?'s':''} couldn't be resolved.</p>`:''}
-  <p class="ctr" style="font-size:12.5px;margin:10px 0 0">Stream tokens can expire after a few hours. When a channel stops playing, tap <b>Refresh M3U</b> on the home screen.</p>
-  <div class="sheetbtns"><button class="btn pri" data-act="viewf">${IC.play}Open in player</button>
-  <div class="row"><button class="btn grow" data-act="sharef">${IC.share}Share</button>${p.lost>0?`<button class="btn grow" data-act="retryx">${IC.refresh}Retry ${p.lost}</button>`:''}</div>
-  <button class="btn" data-act="close">Done</button></div>`}
+  ${hostRes?`<div class="linkbox"><div class="k">Your M3U link</div><div class="u">${esc(hostRes.all)}</div>
+   <div class="tri"><button class="btn pri" data-act="cplink" data-id="${esc(lastFiles[0].name)}">${IC.copy}Copy</button><button class="btn" data-act="playlink">${IC.play}Play</button><button class="btn" data-act="sharelink">${IC.share}Share</button></div>
+   <div class="nt">Secret link - anyone who has it can use your streams. Don't post it.</div></div>`:''}
+  ${hostErr?`<div class="warn">Couldn't host the link: ${esc(hostErr)}<br><button class="mini" style="margin-top:8px" data-act="rehost">Try again</button></div>`:''}
+  ${!hostRes&&!hostErr&&!gh?`<div class="warn n">Want a link instead of a file? Add a GitHub token in Settings (home screen) and your M3U gets a permanent link.</div>`:''}
+  <div class="sec">${lastFiles.length>1?'Files ('+lastFiles.length+')':'Playlist'}</div>
+  ${lastFiles.map((f,i)=>`<div class="fl"><div class="grow"><div class="n">${esc(lab(f,i))}</div><div class="c">${f.count.toLocaleString()} channel${f.count===1?"":"s"} · ${Math.max(1,Math.round(f.size/1024))} KB</div></div>
+   ${hf(f.name)?`<button class="mini p" data-act="cplink" data-id="${esc(f.name)}">Link</button>`:''}<button class="mini" data-act="cpcode" data-id="${esc(f.name)}">Code</button><button class="mini" data-act="savef" data-id="${esc(f.name)}">${i===0?'Open':'Save'}</button></div>`).join('')}
+  <p class="ctr" style="font-size:12.5px;margin:12px 0 0">Stream tokens can expire after a few hours. When a channel stops playing, tap <b>Refresh M3U</b> on the home screen${hostRes?' - the link stays the same':''}.</p>
+  <div class="sheetbtns">${p.lost>0?`<button class="btn" data-act="retryx">${IC.refresh}Retry ${p.lost} failed</button>`:''}<button class="btn" data-act="close">Done</button></div>`}
  else{h=`<div class="okc bad">${IC.x}</div><h2 class="ctr">Export failed</h2><p class="ctr" style="word-break:break-word">${esc(p.msg)}</p>
   <div class="sheetbtns">${job&&p.retry?`<button class="btn pri" data-act="retryx">${IC.refresh}Try again</button>`:''}<button class="btn" data-act="close">Close</button></div>`}
  openSheet(h,p.phase==='run')}
@@ -333,8 +363,15 @@ async function endJob(s){
  if(!s.hasFile){exSheet({phase:'err',msg:s.error||'No links were created',retry:!s.cancelled});return}
  const sv=await native('save',{job});
  if(sv.error){exSheet({phase:'err',msg:sv.error});return}
- saved=sv;cur.last={ts:Date.now(),count:s.ok,failed:s.rows-s.ok};persist();
- exSheet({phase:'done',ok:s.ok,lost:s.rows-s.ok,name:sv.name,stopped:s.cancelled})}
+ saved=sv;lastFiles=s.files||[];lastStat={phase:'done',ok:s.ok,lost:s.rows-s.ok,name:sv.name,stopped:s.cancelled};
+ cur.last={ts:Date.now(),count:s.ok,failed:s.rows-s.ok};persist();hostRes=null;hostErr='';
+ if(gh&&opts.host!==false)await doHost();else exSheet(lastStat)}
+async function doHost(){
+ exSheet({phase:'host'});hostErr='';
+ const r=await native('host',{job,token:gh,gistId:(cur.host&&cur.host.gistId)||'',prevFiles:(cur.host&&cur.host.files)||[]});
+ if(r.error){hostErr=r.error;hostRes=null}
+ else{hostRes=r;cur.host={gistId:r.gistId,all:r.all,files:r.files.map(f=>f.name),ts:Date.now()};persist();if(r.relinked)toast('Old link was deleted - this is a new link')}
+ exSheet(lastStat)}
 let saved=null;
 async function retryJob(){if(exporting)return;exporting=true;await native('keepAwake',{on:true});
  const r=await native('retry',{job});if(r.error){await finishEx();exSheet({phase:'err',msg:r.error});return}
@@ -373,6 +410,19 @@ const ACT={
  cancelx:()=>{native('cancel',{job})},
  retryx:()=>retryJob(),
  viewf:()=>saved&&native('view',{uri:saved.uri}),
+ settings:()=>openSheet(`<h2>Settings</h2><p>GitHub token - used only to host your M3U as a secret link (Gist).</p>
+  <label class="f"><span>GitHub token</span><input class="in" id="set_tok" type="password" value="${esc(gh)}" placeholder="ghp_…  or  github_pat_…" autocomplete="off" autocapitalize="off"></label>
+  <p style="font-size:12.5px;margin:-4px 0 12px">Make one at <b>github.com/settings/tokens</b> → Generate new token (classic) → tick only <b>gist</b>. (Fine-grained token: Account permissions → Gists → Read and write.) It stays on this phone.</p>
+  <div class="sheetbtns"><button class="btn pri" data-act="savetoken">Save</button>${gh?'<button class="btn dng" data-act="deltoken">Remove token</button>':''}</div>`),
+ savetoken:async()=>{gh=$('#set_tok').value.trim();await native('kvSet',{key:'ghtoken',value:gh});closeSheet();toast(gh?'Token saved':'Token removed')},
+ deltoken:async()=>{gh='';await native('kvSet',{key:'ghtoken',value:''});closeSheet();toast('Token removed')},
+ cplink:async(id)=>{const f=hostRes&&hostRes.files.find(x=>x.name===id);if(!f)return;await native('copy',{text:f.url});toast('Link copied')},
+ cphome:async(id)=>{const x=sources.find(z=>z.id===id);if(x&&x.host){await native('copy',{text:x.host.all});toast('Link copied')}},
+ cpcode:async(id)=>{const r=await native('copyFile',{job,file:id});toast(r.error||'M3U code copied')},
+ savef:async(id)=>{if(id===(lastFiles[0]&&lastFiles[0].name)&&saved){native('view',{uri:saved.uri});return}const r=await native('save',{job,file:id});toast(r.error||'Saved to Downloads/'+r.name)},
+ playlink:()=>hostRes&&native('openUrl',{url:hostRes.all,mime:'audio/x-mpegurl'}),
+ sharelink:()=>hostRes&&native('shareText',{text:hostRes.all}),
+ rehost:()=>doHost(),
  sharef:()=>saved&&native('share',{uri:saved.uri})
 };
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;const f=ACT[t.dataset.act];if(f)f(t.dataset.id,t,e)});
@@ -383,5 +433,5 @@ window.__back=()=>{
  return false};
 
 /* ---------- start ---------- */
-(async()=>{const r=await native('kvGet',{key:'sources'});try{sources=JSON.parse(r.value||'[]')}catch(e){sources=[]}renderHome()})();
+(async()=>{const r=await native('kvGet',{key:'sources'});try{sources=JSON.parse(r.value||'[]')}catch(e){sources=[]}const t=await native('kvGet',{key:'ghtoken'});gh=(t&&t.value)||'';renderHome()})();
 </script></body></html>
