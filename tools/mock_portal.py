@@ -36,6 +36,25 @@ S = State()
 app = Flask("mock")
 
 
+GZ = {"n": 0}
+
+
+@app.after_request
+def maybe_gzip(resp):
+    import gzip
+    if ("gzip" in request.headers.get("Accept-Encoding", "") and resp.status_code == 200 and not resp.direct_passthrough
+            and resp.content_type.startswith("text/javascript")):
+        resp.set_data(gzip.compress(resp.get_data()))
+        resp.headers["Content-Encoding"] = "gzip"
+        GZ["n"] += 1
+    return resp
+
+
+@app.route("/_gz")
+def gz_count():
+    return str(GZ["n"])
+
+
 def js(obj):
     return Response(json.dumps({"js": obj}), content_type="text/javascript; charset=utf-8")
 

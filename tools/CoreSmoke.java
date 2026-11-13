@@ -114,6 +114,40 @@ public class CoreSmoke {
         st = finish(j2);
         check(((Number) st.get("ok")).intValue() == 5 && e.jobResult(j2).split("#EXTINF").length - 1 == 5, "retry completes the rest: " + MiniJson.write(st));
 
+        // ---- selection helpers: ids per view, per category, hand-picked export
+        Map<String, Object> l0 = call("list", "{\"key\":\"" + key + "\",\"filter\":{},\"offset\":0,\"limit\":2}");
+        check(MiniJson.list(l0.get("ids")).size() == 5 && MiniJson.list(l0.get("rows")).size() == 2, "list returns all ids of the view");
+        check(MiniJson.list(MiniJson.map(c.get("catIds")).get("1")).size() == 2, "connect returns channel ids per category");
+        check(MiniJson.list(c.get("sids")).size() == 5 && !MiniJson.str(MiniJson.list(c.get("sids")).get(0)).isEmpty(), "stable ids per channel: " + MiniJson.write(c.get("sids")));
+        Map<String, Object> xp = call("export", "{\"key\":\"" + key2 + "\",\"ids\":[0,2],\"filter\":{}}");
+        Map<String, Object> sp = finish(String.valueOf(xp.get("job")));
+        check(((Number) sp.get("total")).intValue() == 2 && ((Number) sp.get("ok")).intValue() == 2, "export only the hand-picked ids: " + MiniJson.write(sp));
+        Map<String, Object> xe = call("export", "{\"key\":\"" + key2 + "\",\"ids\":[0,1,2,3,4],\"filter\":{\"exclude\":\"xxx\"}}");
+        check(((Number) xe.get("total")).intValue() == 4, "exclude words still apply to picked ids");
+        finish(String.valueOf(xe.get("job")));
+        Map<String, Object> xn = call("export", "{\"key\":\"" + key2 + "\",\"ids\":[],\"filter\":{}}");
+        check(String.valueOf(xn.get("error")).contains("No channels"), "empty pick -> clear error");
+
+        // ---- disk cache: opening the same source again is instant and does not touch the portal
+        java.io.File cd = java.nio.file.Files.createTempDirectory("m3ucache").toFile();
+        Engine orig = e;
+        Engine e1 = new Engine(); e1.setCacheDir(cd);
+        e = e1;
+        Map<String, Object> f1 = call("connect", "{\"source\":" + portal(pp, "00:1A:79:00:00:01") + "}");
+        check(Boolean.FALSE.equals(f1.get("cached")) && cd.list().length == 1, "first connect loads from portal and writes cache");
+        Engine e3 = new Engine(); e3.setCacheDir(cd);
+        e = e3;
+        long t0 = System.currentTimeMillis();
+        Map<String, Object> f3 = call("connect", "{\"source\":" + portal(pp, "00:1A:79:00:00:01") + "}");
+        check(Boolean.TRUE.equals(f3.get("cached")) && ((Number) f3.get("channels")).intValue() == 5 && System.currentTimeMillis() - t0 < 300, "second start comes from cache, instantly");
+        Map<String, Object> xcc = call("export", "{\"key\":\"" + f3.get("key") + "\",\"filter\":{}}");
+        Map<String, Object> sc = finish(String.valueOf(xcc.get("job")));
+        check(((Number) sc.get("ok")).intValue() == 5, "export from a cached list logs in by itself: " + MiniJson.write(sc));
+        Map<String, Object> f4 = call("connect", "{\"force\":true,\"source\":" + portal(pp, "00:1A:79:00:00:01") + "}");
+        check(Boolean.FALSE.equals(f4.get("cached")), "force = fresh from portal");
+        e = orig;
+        check(Http.get("http://127.0.0.1:" + pp + "/_gz", new java.util.HashMap<>(), 3000, true).body.trim().compareTo("0") > 0, "portal replies were gzip-compressed and decoded");
+
         // ---- category files + hosting (fake GitHub gist API)
         if (a.length > 1) {
             String gp = a[1], api = "http://127.0.0.1:" + gp;
