@@ -114,6 +114,38 @@ public class CoreSmoke {
         st = finish(j2);
         check(((Number) st.get("ok")).intValue() == 5 && e.jobResult(j2).split("#EXTINF").length - 1 == 5, "retry completes the rest: " + MiniJson.write(st));
 
+        // ---- category files + hosting (fake GitHub gist API)
+        if (a.length > 1) {
+            String gp = a[1], api = "http://127.0.0.1:" + gp;
+            st = call("status", "{\"job\":\"" + j2 + "\"}");
+            List<Object> fl = MiniJson.list(st.get("files"));
+            check(fl != null && fl.size() == 5 && String.valueOf(MiniJson.map(fl.get(0)).get("name")).endsWith("_Full_Channels.m3u"), "files = combined + 4 categories: " + MiniJson.write(fl));
+            Map<String, Object> h0 = call("host", "{\"job\":\"" + j2 + "\",\"token\":\"nope\",\"api\":\"" + api + "\"}");
+            check(String.valueOf(h0.get("error")).contains("token"), "bad token -> clear error: " + h0.get("error"));
+            Map<String, Object> h1 = call("host", "{\"job\":\"" + j2 + "\",\"token\":\"good-token\",\"api\":\"" + api + "\"}");
+            String all = String.valueOf(h1.get("all"));
+            check(h1.get("error") == null && all.contains("/raw/playlist_Full_Channels.m3u") && !all.contains("aaaaaaaa"), "create secret gist, stable raw link: " + all);
+            String body = Http.get(all, new java.util.HashMap<>(), 5000, true).body;
+            check(body.equals(e.jobFile(j2, null)) && body.split("#EXTINF").length - 1 == 5, "hosted link serves the real m3u");
+            String gid = String.valueOf(h1.get("gistId"));
+            // refresh without category split -> same gist, same link, stale category files removed
+            Map<String, Object> ex2 = call("export", "{\"key\":\"" + key2 + "\",\"filter\":{\"cats\":[\"1\"]},\"opts\":{\"split\":false}}");
+            String j3 = String.valueOf(ex2.get("job"));
+            Map<String, Object> st3 = finish(j3);
+            List<Object> pf = new java.util.ArrayList<>();
+            for (Object o : fl) pf.add(MiniJson.map(o).get("name"));
+            Map<String, Object> arg = new java.util.LinkedHashMap<>();
+            arg.put("job", j3); arg.put("token", "good-token"); arg.put("api", api); arg.put("gistId", gid); arg.put("prevFiles", pf);
+            Map<String, Object> h2 = call("host", MiniJson.write(arg));
+            check(h2.get("error") == null && gid.equals(String.valueOf(h2.get("gistId"))) && all.equals(String.valueOf(h2.get("all")))
+                    && MiniJson.list(h2.get("files")).size() == 1 && Boolean.FALSE.equals(h2.get("relinked")), "PATCH update keeps the same link (chunked reply ok): " + MiniJson.write(h2));
+            String body2 = Http.get(all, new java.util.HashMap<>(), 5000, true).body;
+            check(body2.equals(e.jobFile(j3, null)) && !body2.equals(body), "same link now serves the refreshed playlist");
+            arg.put("gistId", "gone999");
+            Map<String, Object> h3 = call("host", MiniJson.write(arg));
+            check(h3.get("error") == null && Boolean.TRUE.equals(h3.get("relinked")) && !"gone999".equals(h3.get("gistId")), "deleted gist -> new gist, relinked=true");
+        }
+
         // ---- Xtream (direct links)
         String xs = "{\"type\":\"xtream\",\"name\":\"X\",\"url\":\"127.0.0.1:" + pp + "\",\"username\":\"user\",\"password\":\"pass\"}";
         Map<String, Object> xc = call("connect", "{\"source\":" + xs + "}");
