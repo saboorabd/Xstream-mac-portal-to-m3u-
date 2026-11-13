@@ -42,6 +42,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ENGINE.setCacheDir(getCacheDir());
         getWindow().setStatusBarColor(BG_COLOR);
         getWindow().setNavigationBarColor(BG_COLOR);
 
@@ -130,6 +131,37 @@ public class MainActivity extends Activity {
                 });
                 return "{}";
             }
+            case "paste": {
+                try {
+                    ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    ClipData cd = cm.getPrimaryClip();
+                    CharSequence t = cd != null && cd.getItemCount() > 0 ? cd.getItemAt(0).coerceToText(this) : "";
+                    return obj("text", String.valueOf(t));
+                } catch (RuntimeException e) {
+                    return obj("text", "");
+                }
+            }
+            case "copyFile": {
+                String t = ENGINE.jobFile(MiniJson.str(a.get("job")), MiniJson.str(a.get("file")));
+                if (t == null) return error("Nothing to copy yet");
+                if (t.length() > 400000) return error("Too big to copy as text (" + (t.length() / 1024) + " KB) - use the link or the file");
+                final String text2 = t;
+                runOnUiThread(() -> {
+                    ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    cm.setPrimaryClip(ClipData.newPlainText("m3u", text2));
+                });
+                return "{}";
+            }
+            case "shareText": {
+                final String text3 = MiniJson.str(a.get("text"));
+                runOnUiThread(() -> {
+                    Intent i = new Intent(Intent.ACTION_SEND);
+                    i.setType("text/plain");
+                    i.putExtra(Intent.EXTRA_TEXT, text3);
+                    startActivity(Intent.createChooser(i, "Share link"));
+                });
+                return "{}";
+            }
             case "save":
                 return save(a);
             case "view":
@@ -146,9 +178,11 @@ public class MainActivity extends Activity {
     /** Writes the finished playlist into the public Downloads folder. */
     private String save(Map<String, Object> a) {
         String job = MiniJson.str(a.get("job"));
-        String m3u = ENGINE.jobResult(job);
+        String file = MiniJson.str(a.get("file"));
+        String m3u = ENGINE.jobFile(job, file);
         if (m3u == null) return error("Nothing to save yet");
-        String name = ENGINE.jobFileName(job);
+        String name = file.isEmpty() ? ENGINE.jobFileName(job)
+                : file.replaceAll("\\.m3u$", "") + "_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmm", java.util.Locale.US).format(new java.util.Date()) + ".m3u";
         try {
             ContentValues v = new ContentValues();
             v.put(MediaStore.Downloads.DISPLAY_NAME, name);
@@ -195,7 +229,8 @@ public class MainActivity extends Activity {
         runOnUiThread(() -> {
             try {
                 Intent i = new Intent(Intent.ACTION_VIEW);
-                i.setDataAndType(uri, "video/*");
+                String mime = MiniJson.str(a.get("mime"));
+                i.setDataAndType(uri, mime.isEmpty() ? "video/*" : mime);
                 startActivity(Intent.createChooser(i, "Play with"));
             } catch (ActivityNotFoundException e) {
                 toast("No video player app found");
