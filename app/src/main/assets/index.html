@@ -1,103 +1,103 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>M3U Converter</title>
+<title>Xtream &amp; MAC to M3U Converter</title>
 <style>
-:root{--bg:#0b0b12;--s1:#12121c;--s2:#191927;--s3:#222236;--bd:rgba(255,255,255,.08);--tx:#f3f3f8;--mut:#9696ae;
+:root{--bg:#0a0a11;--s1:#11111b;--s2:#181826;--s3:#222235;--bd:rgba(255,255,255,.08);--tx:#f4f4fa;--mut:#9a9ab2;
 --ac:#8b5cf6;--ac2:#6366f1;--cy:#22d3ee;--ok:#34d399;--wa:#fbbf24;--er:#fb7185;
---grad:linear-gradient(135deg,#8b5cf6 0%,#6366f1 55%,#22d3ee 130%);--r:18px;--sb:env(safe-area-inset-bottom,0px)}
+--grad:linear-gradient(135deg,#7c3aed 0%,#4f46e5 55%,#06b6d4 130%);--r:18px;--sb:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
-button,input,select{font:inherit;color:inherit}
+body::before{content:"";position:fixed;inset:-20% -20% auto -20%;height:60%;background:radial-gradient(closest-side,rgba(124,58,237,.22),transparent);pointer-events:none}
+button,input,select,textarea{font:inherit;color:inherit}
 button{border:0;background:none;cursor:pointer;padding:0}
 .hide{display:none!important}
-.screen{position:fixed;inset:0;overflow-y:auto;overflow-x:hidden;visibility:hidden;opacity:0;transform:translateX(28px);transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .22s,visibility 0s .28s;padding:0 18px calc(110px + var(--sb))}
+.screen{position:fixed;inset:0;overflow-y:auto;overflow-x:hidden;visibility:hidden;opacity:0;transform:translateX(26px);transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .22s,visibility 0s .28s;padding:0 18px calc(120px + var(--sb))}
 .screen.on{visibility:visible;opacity:1;transform:none;transition-delay:0s}
-.bar{display:flex;align-items:center;gap:10px;padding:max(16px,env(safe-area-inset-top)) 0 12px;position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 78%,transparent)}
-.bar h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{display:flex;align-items:center;gap:10px;padding:max(16px,env(safe-area-inset-top)) 0 12px;position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 80%,transparent)}
+.bar h1{font-size:19px;margin:0;font-weight:750;letter-spacing:-.3px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .icon{width:42px;height:42px;border-radius:14px;background:var(--s2);border:1px solid var(--bd);display:grid;place-items:center;flex:none}
-.icon:active{background:var(--s3)}
-.icon svg{width:20px;height:20px}
+.icon:active{background:var(--s3)}.icon svg{width:20px;height:20px}
 svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.logo{width:40px;height:40px;border-radius:13px;background:var(--grad);display:grid;place-items:center;box-shadow:0 6px 22px rgba(124,92,246,.45);flex:none}
-.logo svg{width:20px;height:20px;fill:#fff;stroke:none}
-.sub{color:var(--mut);font-size:13px;margin-top:-2px}
+.logo{width:44px;height:44px;border-radius:14px;flex:none;box-shadow:0 8px 24px rgba(99,102,241,.45)}
+.sub{color:var(--mut);font-size:12.5px}
 .card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin:0 0 12px}
-.btn{height:46px;border-radius:14px;padding:0 18px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--s2);border:1px solid var(--bd);white-space:nowrap}
-.btn svg{width:18px;height:18px}
+.btn{height:46px;border-radius:14px;padding:0 18px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--s2);border:1px solid var(--bd);white-space:nowrap;transition:transform .12s}
+.btn:active{transform:scale(.97)}.btn svg{width:18px;height:18px}
 .btn.pri{background:var(--grad);border:0;color:#fff;box-shadow:0 8px 24px rgba(99,102,241,.35)}
-.btn.pri:active{filter:brightness(.92)}
 .btn.dng{background:rgba(251,113,133,.14);color:var(--er);border-color:rgba(251,113,133,.3)}
-.btn[disabled]{opacity:.45;pointer-events:none}
-.btn.block{width:100%}
+.btn[disabled]{opacity:.4;pointer-events:none}.btn.block{width:100%}
 .row{display:flex;gap:10px;align-items:center}.grow{flex:1;min-width:0}
-.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:99px;background:var(--s2);border:1px solid var(--bd);font-size:13px;white-space:nowrap;flex:none}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px;border-radius:99px;background:var(--s2);border:1px solid var(--bd);font-size:13px;white-space:nowrap;flex:none}
 .chip b{font-weight:600;color:var(--mut);font-size:12px}
 .chip.on{background:rgba(139,92,246,.2);border-color:rgba(139,92,246,.6)}.chip.on b{color:#c4b5fd}
 .chip.t{height:22px;font-size:11px;padding:0 8px;letter-spacing:.4px;text-transform:uppercase;color:#c4b5fd;background:rgba(139,92,246,.14);border-color:rgba(139,92,246,.3)}
 .chip.ex{height:22px;font-size:11px;padding:0 8px;color:var(--wa);background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.25)}
-/* source cards */
 .src .avatar{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-weight:700;font-size:19px;color:#fff;background:linear-gradient(135deg,hsl(var(--h) 75% 55%),hsl(calc(var(--h) + 50) 80% 45%));flex:none}
 .src .name{font-weight:650;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .src .meta{display:flex;gap:8px;align-items:center;color:var(--mut);font-size:12.5px;margin-top:3px;white-space:nowrap;overflow:hidden}
 .fresh{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:13px;margin:12px 0}
 .dot{width:8px;height:8px;border-radius:50%;background:#555;flex:none}.dot.g{background:var(--ok);box-shadow:0 0 0 4px rgba(52,211,153,.15)}.dot.a{background:var(--wa);box-shadow:0 0 0 4px rgba(251,191,36,.15)}.dot.r{background:var(--er);box-shadow:0 0 0 4px rgba(251,113,133,.15)}
 .actions{display:flex;gap:10px}.actions .btn{flex:1}
-.empty{text-align:center;padding:48px 14px}
-.empty svg.art{width:150px;height:150px;margin:0 auto 10px;stroke:none}
-.empty h3{margin:6px 0;font-size:20px}.empty p{color:var(--mut);margin:0 0 22px}
+.empty{text-align:center;padding:40px 14px}
+.empty .art{width:150px;height:150px;margin:0 auto 14px;border-radius:38px;box-shadow:0 20px 60px rgba(99,102,241,.4)}
+.empty h3{margin:6px 0;font-size:21px}.empty p{color:var(--mut);margin:0 0 22px}
 .fab{position:fixed;right:18px;bottom:calc(18px + var(--sb));height:54px;border-radius:18px;padding:0 20px;z-index:6}
-/* forms */
-.seg{display:flex;background:var(--s1);border:1px solid var(--bd);border-radius:15px;padding:4px;margin-bottom:16px}
+.seg{display:flex;background:var(--s1);border:1px solid var(--bd);border-radius:15px;padding:4px;margin-bottom:14px}
 .seg button{flex:1;height:40px;border-radius:12px;font-weight:600;color:var(--mut);transition:.2s}
 .seg button.on{background:var(--s3);color:var(--tx);box-shadow:0 2px 10px rgba(0,0,0,.3)}
 label.f{display:block;margin:0 0 12px}
 label.f span{display:block;font-size:12.5px;color:var(--mut);margin:0 0 6px 2px;font-weight:550}
-input.in,select.in{width:100%;height:48px;border-radius:14px;background:var(--s1);border:1px solid var(--bd);padding:0 14px;outline:none;transition:border .2s,box-shadow .2s;appearance:none}
-input.in:focus,select.in:focus{border-color:var(--ac);box-shadow:0 0 0 4px rgba(139,92,246,.18)}
+input.in,select.in,textarea.in{width:100%;height:48px;border-radius:14px;background:var(--s1);border:1px solid var(--bd);padding:0 14px;outline:none;transition:border .2s,box-shadow .2s;appearance:none}
+textarea.in{height:auto;padding:12px 14px;resize:none;line-height:1.4}
+input.in:focus,select.in:focus,textarea.in:focus{border-color:var(--ac);box-shadow:0 0 0 4px rgba(139,92,246,.18)}
 input.in.bad{border-color:var(--er);box-shadow:0 0 0 4px rgba(251,113,133,.14)}
-input.in::placeholder{color:#5f5f78}
+input.in.ok{border-color:rgba(52,211,153,.55)}
+input.in::placeholder,textarea.in::placeholder{color:#5f5f78}
 .hint{color:var(--mut);font-size:12.5px;margin:-4px 2px 14px}
+.smart{border:1px dashed rgba(139,92,246,.55);background:rgba(139,92,246,.07)}
+.smart .t{font-weight:650;display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.smart .t svg{width:18px;height:18px;color:#c4b5fd}
 .foot{position:fixed;left:0;right:0;bottom:0;padding:14px 18px calc(14px + var(--sb));background:linear-gradient(transparent,var(--bg) 40%);z-index:6}
-/* channels */
-.sum{display:flex;gap:12px;align-items:center}
-.sum .big{font-size:22px;font-weight:700;letter-spacing:-.3px}
+.sum{display:flex;gap:12px;align-items:center}.sum .big{font-size:22px;font-weight:750;letter-spacing:-.3px}
 .sk{border-radius:10px;background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:sh 1.2s infinite linear}
 @keyframes sh{to{background-position:-200% 0}}
-.search{position:relative;margin:2px 0 12px}
+.steps{margin:6px 0 4px}
+.stp{display:flex;align-items:center;gap:12px;padding:7px 0;color:var(--mut);font-size:14px}
+.stp i{width:22px;height:22px;border-radius:50%;border:2px solid var(--s3);display:grid;place-items:center;flex:none;font-style:normal}
+.stp i svg{width:12px;height:12px;stroke-width:3.5;opacity:0}
+.stp.on{color:var(--tx);font-weight:600}.stp.on i{border-color:var(--ac);border-top-color:transparent;animation:spin .8s linear infinite}
+.stp.done{color:var(--tx)}.stp.done i{background:var(--ok);border-color:var(--ok);color:#06281c}.stp.done i svg{opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+.search{position:relative;margin:2px 0 10px}
 .search svg{position:absolute;left:14px;top:14px;width:20px;height:20px;color:var(--mut)}
 .search input{padding-left:44px}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;margin:0 -18px;padding-left:18px;padding-right:18px;scrollbar-width:none}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 18px 10px;margin:0 -18px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.ch{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--bd);border-radius:12px}
+.tools{display:flex;gap:8px;align-items:center;margin:2px 0 6px;position:sticky;top:68px;z-index:4;background:var(--bg);padding:6px 0}
+.tools .cnt{flex:1;font-size:13px;color:var(--mut);white-space:nowrap}.tools .cnt b{color:var(--tx)}
+.mini{height:34px;padding:0 12px;border-radius:11px;background:var(--s2);border:1px solid var(--bd);font-size:12.5px;font-weight:600;flex:none}
+.mini.p{color:#c4b5fd;border-color:rgba(139,92,246,.45)}
+.ch{display:flex;align-items:center;gap:11px;padding:9px 4px;border-bottom:1px solid var(--bd);border-radius:12px}
 .ch:active{background:var(--s1)}
-.ch .av{position:relative;width:42px;height:42px;border-radius:12px;background:var(--s2);border:1px solid var(--bd);display:grid;place-items:center;font-weight:700;color:var(--mut);overflow:hidden;flex:none}
+.ck{width:24px;height:24px;border-radius:8px;border:2px solid #3a3a55;display:grid;place-items:center;flex:none;transition:.15s}
+.ck svg{width:14px;height:14px;stroke-width:3.4;color:#fff;opacity:0;transform:scale(.5);transition:.15s}
+.ch.sel .ck,.ck.on{background:var(--grad);border-color:transparent}.ch.sel .ck svg,.ck.on svg{opacity:1;transform:none}
+.ck.part{background:rgba(139,92,246,.35);border-color:var(--ac)}.ck.part::after{content:"";width:10px;height:2.5px;border-radius:2px;background:#fff}
+.ch .av{position:relative;width:40px;height:40px;border-radius:12px;background:var(--s2);border:1px solid var(--bd);display:grid;place-items:center;font-weight:700;color:var(--mut);overflow:hidden;flex:none}
 .ch .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--s2)}
 .ch .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:550}
 .ch .gp{color:var(--mut);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ch .pl{width:34px;height:34px;border-radius:50%;background:var(--s2);display:grid;place-items:center;color:var(--mut);flex:none}
+.ch:not(.sel) .nm{color:#b4b4ca}
+.ch .pl{width:36px;height:36px;border-radius:50%;background:var(--s2);display:grid;place-items:center;color:var(--mut);flex:none}
 .ch .pl svg{width:15px;height:15px;fill:currentColor;stroke:none}
 .more{margin:14px 0}
-.linkbox{background:var(--s2);border:1px solid rgba(139,92,246,.45);border-radius:16px;padding:12px 14px;margin:14px 0 10px}
-.linkbox .u{font:12.5px/1.4 ui-monospace,Menlo,monospace;color:#c4b5fd;word-break:break-all;margin:4px 0 12px;max-height:3.9em;overflow:hidden}
-.linkbox .k{font-size:12px;color:var(--mut);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
-.linkbox .nt{color:var(--mut);font-size:12px;margin-top:10px}
-.tri{display:flex;gap:8px}.tri .btn{flex:1;height:42px;padding:0 8px;font-size:14px}
-.sec{color:var(--mut);font-size:12px;font-weight:650;letter-spacing:.4px;text-transform:uppercase;margin:16px 2px 6px}
-.fl{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)}
-.fl .n{font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fl .c{color:var(--mut);font-size:12px}
-.mini{height:34px;padding:0 11px;border-radius:11px;background:var(--s2);border:1px solid var(--bd);font-size:12.5px;font-weight:600;flex:none}
-.mini.p{color:#c4b5fd;border-color:rgba(139,92,246,.45)}
-.warn{color:var(--wa);background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:14px;padding:10px 12px;font-size:13px;margin:12px 0;word-break:break-word}
-.warn.n{color:var(--mut);background:var(--s2);border-color:var(--bd)}
 .err{border-color:rgba(251,113,133,.35);background:rgba(251,113,133,.07)}
-.bottom{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:12px 18px calc(12px + var(--sb));background:rgba(11,11,18,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--bd);display:none;align-items:center;gap:12px}
-.bottom.on{display:flex}
-.bottom .t1{font-weight:650}.bottom .t2{color:var(--mut);font-size:12.5px}
-/* sheet */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:12px 18px calc(12px + var(--sb));background:rgba(10,10,17,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--bd);display:none;align-items:center;gap:12px}
+.bottom.on{display:flex}.bottom .t1{font-weight:650}.bottom .t2{color:var(--mut);font-size:12.5px}
 #bg{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s;z-index:20}
 #bg.on{opacity:1;pointer-events:auto}
-#sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--s1);border:1px solid var(--bd);border-bottom:0;border-radius:26px 26px 0 0;padding:10px 20px calc(22px + var(--sb));transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.9,.2,1);max-height:88vh;overflow-y:auto}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--s1);border:1px solid var(--bd);border-bottom:0;border-radius:26px 26px 0 0;padding:10px 20px calc(22px + var(--sb));transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.9,.2,1);max-height:90vh;overflow-y:auto}
 #sheet.on{transform:none}
 #sheet .grab{width:42px;height:5px;border-radius:9px;background:var(--s3);margin:0 auto 14px}
 #sheet h2{margin:0 0 4px;font-size:20px;letter-spacing:-.2px}
@@ -120,13 +120,28 @@ input.in::placeholder{color:#5f5f78}
 .opt{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd)}
 .mi{display:flex;align-items:center;gap:12px;height:52px;width:100%;font-weight:550;border-bottom:1px solid var(--bd)}
 .mi svg{width:20px;height:20px;color:var(--mut)}
+.linkbox{background:var(--s2);border:1px solid rgba(139,92,246,.45);border-radius:16px;padding:12px 14px;margin:14px 0 10px}
+.linkbox .u{font:12.5px/1.4 ui-monospace,Menlo,monospace;color:#c4b5fd;word-break:break-all;margin:4px 0 12px;max-height:3.9em;overflow:hidden}
+.linkbox .k{font-size:12px;color:var(--mut);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.linkbox .nt{color:var(--mut);font-size:12px;margin-top:10px}
+.tri{display:flex;gap:8px}.tri .btn{flex:1;height:42px;padding:0 8px;font-size:14px}
+.sec{color:var(--mut);font-size:12px;font-weight:650;letter-spacing:.4px;text-transform:uppercase;margin:16px 2px 6px}
+.fl{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)}
+.fl .n{font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fl .c{color:var(--mut);font-size:12px}
+.warn{color:var(--wa);background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:14px;padding:10px 12px;font-size:13px;margin:12px 0;word-break:break-word}
+.warn.n{color:var(--mut);background:var(--s2);border-color:var(--bd)}
+.cl{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--bd)}
+.cl .n{font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cl .c{color:var(--mut);font-size:12px}
 #toast{position:fixed;left:50%;bottom:calc(96px + var(--sb));transform:translate(-50%,20px);background:#2a2a40;border:1px solid var(--bd);padding:11px 18px;border-radius:14px;opacity:0;transition:.25s;z-index:40;max-width:88vw;text-align:center;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 </style></head><body>
 
+<svg width="0" height="0" style="position:absolute"><defs><linearGradient id="lg" x1="0" y1="0" x2="108" y2="108" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7C3AED"/><stop offset=".55" stop-color="#4F46E5"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+<symbol id="logo" viewBox="0 0 108 108"><rect width="108" height="108" rx="26" fill="url(#lg)" stroke="none"/><path fill="#fff" fill-opacity=".6" stroke="none" d="M28,38H36A4,4 0 0 1 40,42V46A4,4 0 0 1 36,50H28A4,4 0 0 1 24,46V42A4,4 0 0 1 28,38ZM28,58H36A4,4 0 0 1 40,62V66A4,4 0 0 1 36,70H28A4,4 0 0 1 24,66V62A4,4 0 0 1 28,58Z"/><path fill="none" stroke="#fff" stroke-width="3" d="M42,44L49,53M42,64L49,55"/><path fill="#fff" stroke="none" d="M61,37H77A9,9 0 0 1 86,46V62A9,9 0 0 1 77,71H61A9,9 0 0 1 52,62V46A9,9 0 0 1 61,37Z"/><path fill="#6D28D9" stroke="none" d="M63,45L63,63L77.5,54Z"/></symbol></defs></svg>
+
 <section id="home" class="screen on">
-  <div class="bar"><div class="logo"><svg viewBox="0 0 24 24"><path d="M8 5l12 7-12 7z"/></svg></div>
-    <div class="grow"><h1>M3U Converter</h1><div class="sub">Real stream links · no server</div></div>
+  <div class="bar"><svg class="logo"><use href="#logo"/></svg>
+    <div class="grow"><h1>Xtream &amp; MAC → M3U</h1><div class="sub">Real stream links · hosted link · no server</div></div>
     <button class="icon" data-act="settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button></div>
   <div id="srcList"></div>
   <button id="fab" class="btn pri fab hide" data-act="add"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add source</button>
@@ -134,6 +149,12 @@ input.in::placeholder{color:#5f5f78}
 
 <section id="form" class="screen">
   <div class="bar"><button class="icon" data-act="back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><h1 id="formTitle">New source</h1></div>
+  <div class="card smart" id="smartCard">
+    <div class="t"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Smart paste - fill everything at once</div>
+    <textarea class="in" id="smart" rows="3" placeholder="Paste all details here: portal URL, MAC, serial, device IDs…  or an Xtream link (…get.php?username=…&password=…)" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn grow" data-act="pasteclip">Paste from clipboard</button><button class="btn" data-act="clearsmart" style="padding:0 14px">Clear</button></div>
+    <div class="sub" id="smartMsg" style="margin-top:8px"></div>
+  </div>
   <div class="seg"><button id="sgP" class="on" data-act="ftype" data-id="portal">MAC Portal</button><button id="sgX" data-act="ftype" data-id="xtream">Xtream Codes</button></div>
   <label class="f"><span>Name (optional)</span><input class="in" id="f_name" placeholder="e.g. Tamil Portal" autocomplete="off"></label>
   <div id="fP">
@@ -151,19 +172,23 @@ input.in::placeholder{color:#5f5f78}
     <label class="f grow"><span>Stream format</span><select class="in" id="f_fmt"><option value="ts">.ts</option><option value="m3u8">.m3u8</option></select></label></div>
   </div>
   <label class="f"><span>EPG (XMLTV) URL - optional</span><input class="in" id="f_epg" placeholder="https://.../epg.xml" autocomplete="off" autocapitalize="off" inputmode="url"></label>
-  <p class="hint">Saved only on this phone. Your login never goes anywhere except to your own provider.</p>
+  <p class="hint">Saved only on this phone. Your login only goes to your own provider.</p>
   <div class="foot"><button class="btn pri block" data-act="saveForm">Save &amp; connect</button></div>
 </section>
 
 <section id="chan" class="screen">
   <div class="bar"><button class="icon" data-act="back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><h1 id="chTitle">Source</h1>
-    <button class="icon" data-act="reconnect" title="Reconnect"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg></button>
+    <button class="icon" data-act="reconnect" title="Refresh list from provider"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg></button>
     <button class="icon" data-act="options" title="Options"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button></div>
   <div id="sumCard" class="card"></div>
-  <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input class="in" id="q" placeholder="Search channels (sun, news…)" autocomplete="off" autocapitalize="off"></div>
-  <div id="chips" class="chips"></div>
-  <div id="chList"></div>
-  <div class="bottom" id="exBar"><div class="grow"><div class="t1" id="exT1">0 channels</div><div class="t2" id="exT2"></div></div>
+  <div id="browse" class="hide">
+    <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input class="in" id="q" placeholder="Search channels…" autocomplete="off" autocapitalize="off"></div>
+    <div id="chips" class="chips"></div>
+    <div class="tools"><div class="cnt" id="viewCnt"></div>
+      <button class="mini p" data-act="cats">Categories</button><button class="mini" data-act="selall">All</button><button class="mini" data-act="selnone">None</button><button class="mini" data-act="selinv">Invert</button></div>
+    <div id="chList"></div>
+  </div>
+  <div class="bottom" id="exBar"><div class="grow"><div class="t1" id="exT1">0 selected</div><div class="t2" id="exT2"></div></div>
     <button class="btn pri" id="exBtn" data-act="export"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export M3U</button></div>
 </section>
 
@@ -181,11 +206,9 @@ const IC={
  edit:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
  trash:'<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>',
  refresh:'<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg>',
- folder:'<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>',
  link:'<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg>',
  copy:'<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>',
- share:'<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg>',
- art:'<svg class="art" viewBox="0 0 160 160"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset=".6" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="22" y="34" width="116" height="80" rx="18" fill="#191927" stroke="none"/><rect x="22" y="34" width="116" height="80" rx="18" stroke="url(#g)" stroke-width="3" fill="none"/><path d="M72 62l28 16-28 16z" fill="url(#g)" stroke="none"/><path d="M58 128h44" stroke="url(#g)" stroke-width="4"/><circle cx="130" cy="30" r="5" fill="#22d3ee" stroke="none"/><circle cx="30" cy="124" r="3" fill="#8b5cf6" stroke="none"/></svg>'
+ share:'<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg>'
 };
 
 /* ---------- native bridge ---------- */
@@ -194,9 +217,11 @@ window.__native=(id,res)=>{const f=pend[id];if(!f)return;delete pend[id];let o;t
 const native=(m,a)=>new Promise(r=>{const id='c'+(++seq);pend[id]=r;try{Android.call(id,m,JSON.stringify(a||{}))}catch(e){delete pend[id];r({error:'App bridge not available'})}});
 
 /* ---------- state ---------- */
-let sources=[],cur=null,conn=null,filter={cats:[],q:'',exclude:''},opts={threads:8,sort:true};
-let gh='',lastFiles=[],lastStat=null,hostRes=null,hostErr='';
-let total=0,shown=0,reqId=0,job=null,ftype='portal',editing=null,exporting=false,connState='loading',connErr='';
+let sources=[],cur=null,conn=null,gh='';
+let filter={cats:[],q:'',exclude:''},opts={threads:8,sort:true,split:true,host:true};
+let S=new Set(),viewIds=[],total=0,shown=0,reqId=0,connId=0;
+let uidSid=[],sidUid=new Map();
+let job=null,ftype='portal',editing=null,exporting=false,connState='loading',connErr='',saved=null,lastFiles=[],lastStat=null,hostRes=null,hostErr='';
 const persist=()=>native('kvSet',{key:'sources',value:JSON.stringify(sources)});
 const uid=()=>Math.random().toString(36).slice(2,9);
 const host=u=>{try{return new URL(/^https?:/i.test(u)?u:'http://'+u).host}catch(e){return u||''}};
@@ -204,35 +229,63 @@ const hue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;retu
 function ago(ts){const m=Math.floor((Date.now()-ts)/60000);if(m<1)return 'just now';if(m<60)return m+' min ago';const h=Math.floor(m/60);if(h<24)return h+' h ago';return Math.floor(h/24)+' d ago'}
 function fresh(ts){if(!ts)return '';const h=(Date.now()-ts)/36e5;return h<3?'g':h<12?'a':'r'}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2600)}
+const plural=(n,w)=>n.toLocaleString()+' '+w+(n===1?'':'s');
 function toSource(s){return s.type==='xtream'?{type:'xtream',url:s.url,username:s.username,password:s.password,kind:s.kind||'live',fmt:s.fmt||'ts'}
  :{type:'portal',url:s.url,mac:s.mac,d1:s.d1||'',d2:s.d2||'',sn:s.sn||''}}
-
-/* api: auto-reconnect once if the engine lost the session */
 async function api(m,a){let r=await native(m,a);
- if(r.code==='nosession'&&cur){const c=await native('connect',{source:toSource(cur)});if(!c.error){conn=c;a.key=c.key;r=await native(m,a)}}
+ if(r.code==='nosession'&&cur){const c=await native('connect',{source:toSource(cur)});if(!c.error){setConn(c);a.key=c.key;r=await native(m,a)}}
  return r}
 
 /* ---------- screens ---------- */
-function show(id){$$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));$('#exBar').classList.toggle('on',id==='chan'&&!!conn);if(id==='home')renderHome()}
+function show(id){$$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));$('#exBar').classList.toggle('on',id==='chan'&&!!conn&&connState==='ok');if(id==='home')renderHome()}
 function renderHome(){
  const el=$('#srcList');
  if(!sources.length){$('#fab').classList.add('hide');
-  el.innerHTML=`<div class="empty">${IC.art}<h3>No sources yet</h3><p>Add your MAC portal or Xtream login and get a playlist with real stream links.</p><button class="btn pri" data-act="add">Add your first source</button></div>`;return}
+  el.innerHTML=`<div class="empty"><svg class="art"><use href="#logo"/></svg><h3>No sources yet</h3><p>Add your MAC portal or Xtream login and get an M3U with real stream links - even as a hosted link.</p><button class="btn pri" data-act="add">Add your first source</button></div>`;return}
  $('#fab').classList.remove('hide');
  el.innerHTML=sources.map(s=>{const f=fresh(s.last&&s.last.ts);
-  const info=s.last?`Exported ${ago(s.last.ts)} · ${s.last.count.toLocaleString()} channels`:'Not exported yet';
-  return `<div class="card src" data-id="${s.id}">
+  const info=s.last?`Exported ${ago(s.last.ts)} · ${plural(s.last.count,'channel')}`:'Not exported yet';
+  return `<div class="card src">
   <div class="row" data-act="open" data-id="${s.id}"><div class="avatar" style="--h:${hue(s.name)}">${esc((s.name||'?')[0].toUpperCase())}</div>
    <div class="grow"><div class="name">${esc(s.name)}</div><div class="meta"><span class="chip t">${s.type==='xtream'?'Xtream':'MAC'}</span><span>${esc(host(s.url))}</span>${s.expires?`<span class="chip ex">exp ${esc(s.expires)}</span>`:''}</div></div>
    <button class="icon" data-act="menu" data-id="${s.id}">${IC.dots}</button></div>
   <div class="fresh"><span class="dot ${f}"></span><span>${info}</span></div>
   ${s.host?`<button class="chip on" style="margin:-4px 0 12px" data-act="cphome" data-id="${s.id}">${IC.link.replace('<svg','<svg width="14" height="14"')}Copy hosted link</button>`:''}
-  <div class="actions"><button class="btn" data-act="open" data-id="${s.id}">Browse</button><button class="btn pri" data-act="quick" data-id="${s.id}">${IC.refresh}Refresh M3U</button></div></div>`}).join('')}
+  <div class="actions"><button class="btn" data-act="open" data-id="${s.id}">Choose channels</button><button class="btn pri" data-act="quick" data-id="${s.id}">${IC.refresh}Refresh M3U</button></div></div>`}).join('')}
+
+/* ---------- smart paste ---------- */
+function smartParse(t){
+ t=(t||'').replace(/\r/g,'');const o={};
+ const um=t.match(/https?:\/\/[^\s"'<>]+/i);let url=um?um[0].replace(/[),.;]+$/,''):'';
+ let q={};try{if(url)new URL(url).searchParams.forEach((v,k)=>q[k.toLowerCase()]=v)}catch(e){}
+ const val=re=>{const m=t.match(re);return m?m[1].trim():''};
+ const mac=t.match(/\b(?:[0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}\b/);if(mac)o.mac=mac[0].toUpperCase().replace(/-/g,':');
+ o.sn=val(/(?:serial(?:[\s_]*(?:number|no\.?))?|\bsn\b)\s*[:=\-]?\s*([A-Za-z0-9]{6,})/i);
+ o.d2=val(/device[\s_]*id[\s_]*2\s*[:=\-]?\s*([A-Za-z0-9]{8,})/i);
+ o.d1=val(/device[\s_]*id[\s_]*1?(?![\s_]*2)\s*[:=\-]?\s*([A-Za-z0-9]{8,})/i);
+ o.username=q.username||val(/\buser(?:name)?\s*[:=]\s*(\S+)/i);
+ o.password=q.password||val(/\bpass(?:word)?\s*[:=]\s*(\S+)/i);
+ const xt=(o.username&&o.password)||/(get|player_api|xmltv|panel_api)\.php/i.test(url);
+ o.type=xt?'xtream':(o.mac?'portal':'');
+ if(url){try{o.url=xt?new URL(url).origin:url}catch(e){o.url=url}}
+ return o}
+function applySmart(t,quiet){
+ const o=smartParse(t);const m=$('#smartMsg');
+ if(!o.type&&!o.url){m.textContent=t.trim()?'Couldn\'t find a portal or Xtream login in this text.':'';m.style.color=t.trim()?'var(--wa)':'';return false}
+ const set=(id,v)=>{if(v){const e=$('#'+id);e.value=v;e.classList.remove('bad');e.classList.add('ok')}};
+ if(o.type)setFtype(o.type);
+ if(o.type==='xtream'){set('f_xurl',o.url);set('f_user',o.username);set('f_pass',o.password)}
+ else{set('f_url',o.url);set('f_mac',o.mac);set('f_d1',o.d1);set('f_d2',o.d2);set('f_sn',o.sn)}
+ if(o.url&&!$('#f_name').value)$('#f_name').value=(/^[\d.:]+$/.test(host(o.url))?host(o.url).split(':')[0]:host(o.url).replace(/^(www|tv|watch|portal)\./,'').split('.')[0].replace(/^./,c=>c.toUpperCase()));
+ const got=o.type==='xtream'?['URL',o.username&&'user',o.password&&'password']:['URL',o.mac&&'MAC',o.d1&&'Device ID 1',o.d2&&'Device ID 2',o.sn&&'Serial'];
+ m.style.color='var(--ok)';m.textContent='Detected '+(o.type==='xtream'?'Xtream':'MAC portal')+': '+got.filter(Boolean).join(', ');
+ return true}
 
 /* ---------- add / edit ---------- */
 function setFtype(t){ftype=t;$('#sgP').classList.toggle('on',t==='portal');$('#sgX').classList.toggle('on',t==='xtream');$('#fP').classList.toggle('hide',t!=='portal');$('#fX').classList.toggle('hide',t!=='xtream')}
 function openForm(s){editing=s||null;$('#formTitle').textContent=s?'Edit source':'New source';
- const v=(id,x)=>{$('#'+id).value=x||'';$('#'+id).classList.remove('bad')};
+ const v=(id,x)=>{$('#'+id).value=x||'';$('#'+id).classList.remove('bad','ok')};
+ v('smart','');$('#smartMsg').textContent='';$('#smartCard').classList.toggle('hide',!!s);
  v('f_name',s&&s.name);v('f_url',s&&s.type==='portal'?s.url:'');v('f_mac',s&&s.mac);v('f_d1',s&&s.d1);v('f_d2',s&&s.d2);v('f_sn',s&&s.sn);
  v('f_xurl',s&&s.type==='xtream'?s.url:'');v('f_user',s&&s.username);v('f_pass',s&&s.password);v('f_epg',s&&s.epg);
  $('#f_kind').value=(s&&s.kind)||'live';$('#f_fmt').value=(s&&s.fmt)||'ts';setFtype(s?s.type:'portal');show('form')}
@@ -243,50 +296,86 @@ async function saveForm(){
  $$('#form input').forEach(i=>i.classList.toggle('bad',bad.includes(i.id)));
  if(bad.length){toast('Please fill the highlighted fields');return}
  const url=ftype==='portal'?g('f_url'):g('f_xurl');
- const s=Object.assign(editing||{id:uid(),filter:{cats:[],q:'',exclude:''},opts:{threads:8,sort:true}},
+ const s=Object.assign(editing||{id:uid(),filter:{exclude:''},opts:{threads:8,sort:true,split:true,host:true}},
   {type:ftype,name:g('f_name')||host(url),url,epg:g('f_epg')});
  if(ftype==='portal')Object.assign(s,{mac:g('f_mac'),d1:g('f_d1'),d2:g('f_d2'),sn:g('f_sn')});
  else Object.assign(s,{username:g('f_user'),password:g('f_pass'),kind:$('#f_kind').value,fmt:$('#f_fmt').value});
  if(editing){const i=sources.indexOf(editing);sources[i]=s}else sources.unshift(s);
  await persist();openSource(s.id,true)}
 
+/* ---------- connecting (with live steps) ---------- */
+const STEPS=['Reaching the provider','Logging in','Loading channels','Building categories'];
+function stepOf(p){p=(p||'').toLowerCase();return p.startsWith('build')?3:p.startsWith('load')?2:p.startsWith('log')?1:0}
+function sumLoading(step,secs){const c=$('#sumCard');c.className='card';
+ c.innerHTML=`<div style="font-weight:650;margin-bottom:6px">Connecting…</div><div class="steps">${STEPS.map((t,i)=>`<div class="stp ${i<step?'done':i===step?'on':''}"><i>${IC.check}</i>${t}</div>`).join('')}</div>
+ <div class="sub" style="margin-top:6px">${secs}s · big portals (10,000+ channels) take 20-40 s the first time. Next time this source opens instantly.</div>`}
+async function connectLive(force,quiet){
+ const my=++connId;let t0=Date.now(),step=0;
+ if(!quiet)sumLoading(0,0);
+ const timer=setInterval(async()=>{if(my!==connId){clearInterval(timer);return}
+  const ph=await native('phase',{});if(ph&&!ph.error)step=Math.max(step,stepOf(ph.phase));
+  if(!quiet)sumLoading(step,Math.round((Date.now()-t0)/1000))},700);
+ const r=await native('connect',{source:toSource(cur),force:!!force});
+ clearInterval(timer);return my===connId?r:null}
+
+/* ---------- selection ---------- */
+function setConn(r){conn=r;uidSid=r.sids||[];sidUid=new Map();uidSid.forEach((s,i)=>sidUid.set(s,i))}
+async function loadSel(){
+ const r=await native('kvGet',{key:'sel_'+cur.id});let o=null;try{o=JSON.parse(r.value||'null')}catch(e){}
+ S=new Set();const n=conn.channels;
+ if(!o||!o.m){for(let i=0;i<n;i++)S.add(i);return}
+ if(o.m==='all'){const skip=new Set(o.s||[]);for(let i=0;i<n;i++)if(!skip.has(uidSid[i]))S.add(i)}
+ else for(const sid of o.s||[]){const u=sidUid.get(sid);if(u!==undefined)S.add(u)}}
+let saveT;function saveSel(){clearTimeout(saveT);saveT=setTimeout(()=>{if(!cur||!conn)return;const n=conn.channels;let o;
+ if(S.size>n/2){const sk=[];for(let i=0;i<n;i++)if(!S.has(i))sk.push(uidSid[i]);o={m:'all',s:sk}}
+ else o={m:'pick',s:[...S].map(i=>uidSid[i])};
+ native('kvSet',{key:'sel_'+cur.id,value:JSON.stringify(o)})},500)}
+function selUpdate(){
+ const n=S.size,N=conn?conn.channels:0;
+ $('#exT1').textContent=plural(n,'channel')+' selected';
+ $('#exT2').textContent=!n?'Tick the channels you want':n===N?'All channels':`of ${N.toLocaleString()} total`;
+ $('#exBtn').disabled=!n;
+ let v=0;for(const i of viewIds)if(S.has(i))v++;
+ $('#viewCnt').innerHTML=viewIds.length===N?`<b>${v.toLocaleString()}</b> of ${N.toLocaleString()} ticked`:`<b>${v.toLocaleString()}</b> of ${viewIds.length.toLocaleString()} in view`;
+ saveSel()}
+function toggle(i){S.has(i)?S.delete(i):S.add(i);const el=document.querySelector('.ch[data-id="'+i+'"]');if(el)el.classList.toggle('sel',S.has(i));selUpdate()}
+function bulk(ids,on){for(const i of ids)on?S.add(i):S.delete(i);$$('.ch').forEach(e=>e.classList.toggle('sel',S.has(+e.dataset.id)));selUpdate()}
+
 /* ---------- channel browser ---------- */
 async function openSource(id,force){
  cur=sources.find(s=>s.id===id);if(!cur)return;
- filter=Object.assign({cats:[],q:'',exclude:''},cur.filter||{});opts=Object.assign({threads:8,sort:true},cur.opts||{});
- $('#chTitle').textContent=cur.name;$('#q').value=filter.q||'';conn=null;total=0;
- $('#chips').innerHTML='';$('#chList').innerHTML='';show('chan');await doConnect(!!force)}
+ filter={cats:[],q:'',exclude:(cur.filter&&cur.filter.exclude)||''};opts=Object.assign({threads:8,sort:true,split:true,host:true},cur.opts||{});
+ $('#chTitle').textContent=cur.name;$('#q').value='';conn=null;total=0;viewIds=[];
+ $('#browse').classList.add('hide');$('#chips').innerHTML='';$('#chList').innerHTML='';show('chan');await doConnect(!!force)}
 function sumCard(){const c=$('#sumCard');
- if(connState==='loading'){c.className='card';c.innerHTML='<div class="sum"><div class="sk" style="width:46px;height:46px;border-radius:14px"></div><div class="grow"><div class="sk" style="height:16px;width:60%;margin-bottom:8px"></div><div class="sk" style="height:12px;width:40%"></div></div></div><div class="sub" style="margin-top:12px">Connecting and loading channels…</div>';return}
- if(connState==='error'){c.className='card err';c.innerHTML=`<div style="font-weight:650;margin-bottom:6px">Couldn't connect</div><div class="sub" style="color:var(--er);margin:0 0 12px;word-break:break-word">${esc(connErr)}</div><div class="actions"><button class="btn" data-act="editcur">Edit source</button><button class="btn pri" data-act="reconnect">Try again</button></div>`;return}
- c.className='card';c.innerHTML=`<div class="sum"><span class="dot g"></span><div class="grow"><div class="big">${conn.channels.toLocaleString()} <span style="font-size:15px;font-weight:550;color:var(--mut)">channels</span></div><div class="sub">${conn.categories.length} categories${conn.expires?` · expires ${esc(conn.expires)}`:''}</div></div></div>`}
+ if(connState==='error'){c.className='card err';c.innerHTML=`<div style="font-weight:650;margin-bottom:6px">Couldn't connect</div><div class="sub" style="color:var(--er);margin:0 0 12px;word-break:break-word;font-size:13.5px">${esc(connErr)}</div><div class="actions"><button class="btn" data-act="editcur">Edit source</button><button class="btn pri" data-act="reconnect">Try again</button></div>`;return}
+ c.className='card';c.innerHTML=`<div class="sum"><span class="dot g"></span><div class="grow"><div class="big">${conn.channels.toLocaleString()} <span style="font-size:15px;font-weight:550;color:var(--mut)">channels</span></div><div class="sub">${plural(conn.categories.length,'category').replace('categorys','categories')}${conn.expires?` · expires ${esc(conn.expires)}`:''}</div></div>
+ <div style="text-align:right" class="sub">Updated<br><b style="color:var(--tx)">${ago(conn.loadedAt)}</b></div></div>`}
 async function doConnect(force){
- connState='loading';sumCard();$('#exBar').classList.remove('on');
- const r=await native('connect',{source:toSource(cur),force:!!force});
+ connState='loading';$('#browse').classList.add('hide');$('#exBar').classList.remove('on');
+ const r=await connectLive(force);if(r===null)return false;
  if(r.error){conn=null;connState='error';connErr=r.error;sumCard();return false}
- conn=r;connState='ok';cur.expires=r.expires||cur.expires||'';persist();sumCard();renderChips();$('#exBar').classList.add('on');await refreshList(true);return true}
+ setConn(r);connState='ok';cur.expires=r.expires||cur.expires||'';persist();
+ await loadSel();sumCard();renderChips();$('#browse').classList.remove('hide');$('#exBar').classList.add('on');
+ if(r.cached&&Date.now()-r.loadedAt>3*36e5)toast('Showing saved list - tap ⟳ to refresh');
+ await refreshList(true);return true}
 function renderChips(){
  const sel=new Set(filter.cats);
  $('#chips').innerHTML=`<button class="chip ${sel.size?'':'on'}" data-act="cat" data-id="*">All</button>`+
   conn.categories.map(c=>`<button class="chip ${sel.has(c.id)?'on':''}" data-act="cat" data-id="${esc(c.id)}">${esc(c.name)} <b>${c.count}</b></button>`).join('')}
 async function refreshList(reset){
- if(!conn)return;const my=++reqId;if(reset){shown=0}
+ if(!conn)return;const my=++reqId;if(reset)shown=0;
  const r=await api('list',{key:conn.key,filter,offset:reset?0:shown,limit:60});
  if(my!==reqId)return;
  if(r.error){toast(r.error);return}
- total=r.total;const el=$('#chList');
+ total=r.total;if(r.ids)viewIds=r.ids;const el=$('#chList');
  if(reset)el.innerHTML='';
  el.querySelector('.more')&&el.querySelector('.more').remove();
  if(!total){el.innerHTML=`<div class="empty" style="padding:30px 10px"><h3>No channels match</h3><p>Try a different search or category.</p></div>`}
- else{el.insertAdjacentHTML('beforeend',r.rows.map(x=>`<div class="ch" data-act="play" data-id="${x.id}"><div class="av">${esc((x.name||'?')[0].toUpperCase())}${x.logo?`<img loading="lazy" src="${esc(x.logo)}" onerror="this.remove()" alt="">`:''}</div><div class="grow"><div class="nm">${esc(x.name)}</div><div class="gp">${esc(x.group)}</div></div><div class="pl">${IC.play}</div></div>`).join(''));
+ else{el.insertAdjacentHTML('beforeend',r.rows.map(x=>`<div class="ch ${S.has(x.id)?'sel':''}" data-act="tog" data-id="${x.id}"><div class="ck">${IC.check}</div><div class="av">${esc((x.name||'?')[0].toUpperCase())}${x.logo?`<img loading="lazy" src="${esc(x.logo)}" onerror="this.remove()" alt="">`:''}</div><div class="grow"><div class="nm">${esc(x.name)}</div><div class="gp">${esc(x.group)}</div></div><button class="pl" data-act="play" data-id="${x.id}" title="Test play">${IC.play}</button></div>`).join(''));
   shown+=r.rows.length;
   if(shown<total)el.insertAdjacentHTML('beforeend',`<div class="more ctr"><button class="btn" data-act="more">Show more (${(total-shown).toLocaleString()} left)</button></div>`)}
- barInfo()}
-function barInfo(){
- $('#exT1').textContent=total.toLocaleString()+(total===1?' channel':' channels')+' selected';
- const x=cur&&cur.type==='xtream';
- $('#exT2').textContent=!total?'':x?'Instant - links come straight from your provider':total>1500?'Large - may take a few minutes':'Real links are resolved one by one';
- $('#exBtn').disabled=!total}
+ selUpdate()}
 let qT;function onSearch(){clearTimeout(qT);qT=setTimeout(()=>{filter.q=$('#q').value.trim();refreshList(true)},280)}
 
 /* ---------- sheets ---------- */
@@ -300,6 +389,17 @@ function menuSheet(id){const s=sources.find(x=>x.id===id);
 function delAsk(id){const s=sources.find(x=>x.id===id);
  openSheet(`<h2>Delete “${esc(s.name)}”?</h2><p>This only removes it from this phone. Playlists you already saved stay in Downloads.</p>
  <div class="sheetbtns"><button class="btn dng" data-act="del" data-id="${id}">Delete</button><button class="btn" data-act="close">Cancel</button></div>`)}
+function catSheet(q){
+ q=(q||'').toLowerCase();const ci=conn.catIds;
+ const rows=conn.categories.filter(c=>!q||c.name.toLowerCase().includes(q)).map(c=>{const ids=ci[c.id]||[];let k=0;for(const i of ids)if(S.has(i))k++;
+  const st=k===0?'':k===ids.length?'on':'part';
+  return `<div class="cl" data-act="togcat" data-id="${esc(c.id)}"><div class="ck ${st}">${IC.check}</div><div class="grow"><div class="n">${esc(c.name)}</div><div class="c">${k.toLocaleString()} / ${ids.length.toLocaleString()} ticked</div></div></div>`}).join('');
+ const keep=$('#cq');const has=!!keep;
+ if(!has||!sheetOpen())openSheet(`<h2>Pick categories</h2><p>Tap a category to tick or untick every channel in it.</p>
+  <div class="row" style="margin-bottom:8px"><input class="in grow" id="cq" placeholder="Search categories…" autocomplete="off" autocapitalize="off"><button class="mini" data-act="catall">All</button><button class="mini" data-act="catnone">None</button></div>
+  <div id="catRows">${rows||'<p>No categories</p>'}</div><div class="sheetbtns"><button class="btn pri" data-act="close">Done · ${plural(S.size,'channel')}</button></div>`);
+ else{$('#catRows').innerHTML=rows||'<p>No match</p>'}
+ const b=$('#sheet .btn.pri');if(b)b.textContent='Done · '+plural(S.size,'channel')}
 function optionsSheet(){const x=cur.type==='xtream';
  openSheet(`<h2>Options</h2><p>Saved for this source.</p>
  <label class="f"><span>Exclude words (name or category)</span><input class="in" id="o_ex" value="${esc(filter.exclude||'')}" placeholder="adult, xxx" autocapitalize="off" autocomplete="off"></label>
@@ -312,7 +412,7 @@ function optionsSheet(){const x=cur.type==='xtream';
  if(!x)$('#o_th').value=String(opts.threads)}
 function optSave(){const ex=$('#o_ex').value.trim();const changed=ex!==(filter.exclude||'');filter.exclude=ex;cur.epg=$('#o_epg').value.trim();
  if($('#o_th'))opts.threads=+$('#o_th').value;opts.sort=$('#o_sort').classList.contains('on');opts.split=$('#o_split').classList.contains('on');opts.host=$('#o_host').classList.contains('on');
- cur.filter=filter;cur.opts=opts;persist();closeSheet();if(changed)refreshList(true)}
+ cur.filter={exclude:filter.exclude};cur.opts=opts;persist();closeSheet();if(changed)refreshList(true)}
 
 /* ---------- export ---------- */
 function exSheet(p){
@@ -327,7 +427,7 @@ function exSheet(p){
   h=`<h2>Hosting your link…</h2><p style="margin-bottom:0">Uploading to a secret GitHub Gist</p><div class="prog ind"><i></i></div>`}
  else if(p.phase==='done'){
   const base=lastFiles.length?lastFiles[0].name.replace(/_Full_Channels\.m3u$/,''):'';
-  const lab=(f,i)=>i===0?'All channels':f.name.replace(/\.m3u$/,'').slice(base.length+1).replace(/_/g,' ');
+  const lab=(f,i)=>i===0?'Full channels':f.name.replace(/\.m3u$/,'').slice(base.length+1).replace(/_/g,' ');
   const hf=n=>hostRes&&hostRes.files.find(x=>x.name===n);
   h=`<div class="okc">${IC.check}</div><h2 class="ctr">${p.ok.toLocaleString()} real links ready</h2>
   <p class="ctr" style="margin-bottom:0">${p.stopped?'Stopped early. ':''}Saved to <b style="color:var(--tx)">Downloads/${esc(p.name)}</b></p>
@@ -338,7 +438,7 @@ function exSheet(p){
   ${hostErr?`<div class="warn">Couldn't host the link: ${esc(hostErr)}<br><button class="mini" style="margin-top:8px" data-act="rehost">Try again</button></div>`:''}
   ${!hostRes&&!hostErr&&!gh?`<div class="warn n">Want a link instead of a file? Add a GitHub token in Settings (home screen) and your M3U gets a permanent link.</div>`:''}
   <div class="sec">${lastFiles.length>1?'Files ('+lastFiles.length+')':'Playlist'}</div>
-  ${lastFiles.map((f,i)=>`<div class="fl"><div class="grow"><div class="n">${esc(lab(f,i))}</div><div class="c">${f.count.toLocaleString()} channel${f.count===1?"":"s"} · ${Math.max(1,Math.round(f.size/1024))} KB</div></div>
+  ${lastFiles.map((f,i)=>`<div class="fl"><div class="grow"><div class="n">${esc(lab(f,i))}</div><div class="c">${plural(f.count,'channel')} · ${Math.max(1,Math.round(f.size/1024))} KB</div></div>
    ${hf(f.name)?`<button class="mini p" data-act="cplink" data-id="${esc(f.name)}">Link</button>`:''}<button class="mini" data-act="cpcode" data-id="${esc(f.name)}">Code</button><button class="mini" data-act="savef" data-id="${esc(f.name)}">${i===0?'Open':'Save'}</button></div>`).join('')}
   <p class="ctr" style="font-size:12.5px;margin:12px 0 0">Stream tokens can expire after a few hours. When a channel stops playing, tap <b>Refresh M3U</b> on the home screen${hostRes?' - the link stays the same':''}.</p>
   <div class="sheetbtns">${p.lost>0?`<button class="btn" data-act="retryx">${IC.refresh}Retry ${p.lost} failed</button>`:''}<button class="btn" data-act="close">Done</button></div>`}
@@ -346,9 +446,9 @@ function exSheet(p){
   <div class="sheetbtns">${job&&p.retry?`<button class="btn pri" data-act="retryx">${IC.refresh}Try again</button>`:''}<button class="btn" data-act="close">Close</button></div>`}
  openSheet(h,p.phase==='run')}
 async function runExport(){
- if(!conn||exporting)return;exporting=true;cur.filter=filter;cur.opts=opts;persist();
+ if(!conn||exporting)return;exporting=true;cur.filter={exclude:filter.exclude};cur.opts=opts;persist();
  await native('keepAwake',{on:true});exSheet({phase:'run',msg:'Preparing…',total:0,done:0});
- const r=await api('export',{key:conn.key,name:cur.name,filter,opts,epg:cur.epg||''});
+ const r=await api('export',{key:conn.key,name:cur.name,ids:[...S],filter:{exclude:filter.exclude},opts,epg:cur.epg||''});
  if(r.error){await finishEx();exSheet({phase:'err',msg:r.error});return}
  job=r.job;await pollJob()}
 async function pollJob(){
@@ -372,16 +472,18 @@ async function doHost(){
  if(r.error){hostErr=r.error;hostRes=null}
  else{hostRes=r;cur.host={gistId:r.gistId,all:r.all,files:r.files.map(f=>f.name),ts:Date.now()};persist();if(r.relinked)toast('Old link was deleted - this is a new link')}
  exSheet(lastStat)}
-let saved=null;
 async function retryJob(){if(exporting)return;exporting=true;await native('keepAwake',{on:true});
  const r=await native('retry',{job});if(r.error){await finishEx();exSheet({phase:'err',msg:r.error});return}
  exSheet({phase:'run',msg:'Retrying failed channels…',total:0,done:0});await pollJob()}
 async function quick(id){
- cur=sources.find(s=>s.id===id);filter=Object.assign({cats:[],q:'',exclude:''},cur.filter||{});opts=Object.assign({threads:8,sort:true},cur.opts||{});
+ cur=sources.find(s=>s.id===id);filter={cats:[],q:'',exclude:(cur.filter&&cur.filter.exclude)||''};opts=Object.assign({threads:8,sort:true,split:true,host:true},cur.opts||{});
  exSheet({phase:'run',title:'Refreshing '+cur.name,msg:'Connecting…',total:0,done:0});
- const r=await native('connect',{source:toSource(cur)});
- if(r.error){exSheet({phase:'err',msg:r.error});return}
- conn=r;cur.expires=r.expires||cur.expires||'';await runExport()}
+ let r=await connectLive(false,true);
+ if(r&&!r.error&&r.cached&&Date.now()-r.loadedAt>36e5)r=await connectLive(true,true);   // saved list is old -> fresh one
+ if(!r||r.error){exSheet({phase:'err',msg:r?r.error:'Cancelled'});return}
+ setConn(r);cur.expires=r.expires||cur.expires||'';await loadSel();
+ if(!S.size){exSheet({phase:'err',msg:'No channels are ticked for this source. Tap "Choose channels" first.'});return}
+ await runExport()}
 
 /* ---------- actions ---------- */
 const ACT={
@@ -389,27 +491,35 @@ const ACT={
  back:()=>{if(sheetOpen())closeSheet();else show('home')},
  ftype:(id)=>setFtype(id),
  saveForm:()=>saveForm(),
+ pasteclip:async()=>{const r=await native('paste',{});const t=(r&&r.text)||'';if(!t.trim()){toast('Clipboard is empty');return}$('#smart').value=t;applySmart(t)},
+ clearsmart:()=>{$('#smart').value='';$('#smartMsg').textContent=''},
  open:(id)=>openSource(id,false),
  quick:(id)=>quick(id),
  menu:(id)=>menuSheet(id),
  edit:(id)=>{closeSheet();openForm(sources.find(s=>s.id===id))},
  editcur:()=>openForm(cur),
  delask:(id)=>delAsk(id),
- del:async(id)=>{sources=sources.filter(s=>s.id!==id);await persist();closeSheet();renderHome();toast('Deleted')},
- close:()=>{closeSheet();if(!conn||$('#home').classList.contains('on'))renderHome()},
+ del:async(id)=>{sources=sources.filter(s=>s.id!==id);await persist();native('kvSet',{key:'sel_'+id,value:''});closeSheet();renderHome();toast('Deleted')},
+ close:()=>{closeSheet();if($('#home').classList.contains('on'))renderHome()},
  bg:()=>{if($('#sheet').dataset.locked)return;ACT.close()},
- reconnect:()=>doConnect(true),
+ reconnect:()=>cur&&doConnect(true),
  options:()=>conn&&optionsSheet(),
  sw:(id,el)=>el.classList.toggle('on'),
  optsave:()=>optSave(),
- cat:(id)=>{if(id==='*')filter.cats=[];else{const i=filter.cats.indexOf(id);if(i<0)filter.cats.push(id);else filter.cats.splice(i,1)}
-  cur.filter=filter;renderChips();refreshList(true)},
+ cat:(id)=>{if(id==='*')filter.cats=[];else{const i=filter.cats.indexOf(id);if(i<0)filter.cats.push(id);else filter.cats.splice(i,1)}renderChips();refreshList(true)},
  more:()=>refreshList(false),
- play:async(id)=>{toast('Resolving link…');const r=await api('resolve',{key:conn.key,id:+id});if(r.error){toast(r.error);return}await native('openUrl',{url:r.url})},
+ tog:(id)=>toggle(+id),
+ selall:()=>bulk(viewIds,true),
+ selnone:()=>bulk(viewIds,false),
+ selinv:()=>{for(const i of viewIds)S.has(i)?S.delete(i):S.add(i);bulk([],true)},
+ cats:()=>catSheet(''),
+ togcat:(id)=>{const ids=conn.catIds[id]||[];let all=true;for(const i of ids)if(!S.has(i)){all=false;break}bulk(ids,!all);catSheet($('#cq')?$('#cq').value:'')},
+ catall:()=>{bulk(Object.values(conn.catIds).flat(),true);catSheet($('#cq').value)},
+ catnone:()=>{bulk(Object.values(conn.catIds).flat(),false);catSheet($('#cq').value)},
+ play:async(id,el,e)=>{e.stopPropagation();toast('Resolving link…');const r=await api('resolve',{key:conn.key,id:+id});if(r.error){toast(r.error);return}await native('openUrl',{url:r.url})},
  export:()=>runExport(),
  cancelx:()=>{native('cancel',{job})},
  retryx:()=>retryJob(),
- viewf:()=>saved&&native('view',{uri:saved.uri}),
  settings:()=>openSheet(`<h2>Settings</h2><p>GitHub token - used only to host your M3U as a secret link (Gist).</p>
   <label class="f"><span>GitHub token</span><input class="in" id="set_tok" type="password" value="${esc(gh)}" placeholder="ghp_…  or  github_pat_…" autocomplete="off" autocapitalize="off"></label>
   <p style="font-size:12.5px;margin:-4px 0 12px">Make one at <b>github.com/settings/tokens</b> → Generate new token (classic) → tick only <b>gist</b>. (Fine-grained token: Account permissions → Gists → Read and write.) It stays on this phone.</p>
@@ -422,16 +532,18 @@ const ACT={
  savef:async(id)=>{if(id===(lastFiles[0]&&lastFiles[0].name)&&saved){native('view',{uri:saved.uri});return}const r=await native('save',{job,file:id});toast(r.error||'Saved to Downloads/'+r.name)},
  playlink:()=>hostRes&&native('openUrl',{url:hostRes.all,mime:'audio/x-mpegurl'}),
  sharelink:()=>hostRes&&native('shareText',{text:hostRes.all}),
- rehost:()=>doHost(),
- sharef:()=>saved&&native('share',{uri:saved.uri})
+ rehost:()=>doHost()
 };
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;const f=ACT[t.dataset.act];if(f)f(t.dataset.id,t,e)});
 $('#q').addEventListener('input',onSearch);
+$('#smart').addEventListener('input',()=>applySmart($('#smart').value));
+document.addEventListener('input',e=>{if(e.target.id==='cq')catSheet(e.target.value)});
 window.__back=()=>{
  if(sheetOpen()){if(!$('#sheet').dataset.locked)closeSheet();return true}
  if(!$('#home').classList.contains('on')){show('home');return true}
  return false};
 
 /* ---------- start ---------- */
-(async()=>{const r=await native('kvGet',{key:'sources'});try{sources=JSON.parse(r.value||'[]')}catch(e){sources=[]}const t=await native('kvGet',{key:'ghtoken'});gh=(t&&t.value)||'';renderHome()})();
+(async()=>{const r=await native('kvGet',{key:'sources'});try{sources=JSON.parse(r.value||'[]')}catch(e){sources=[]}
+ const t=await native('kvGet',{key:'ghtoken'});gh=(t&&t.value)||'';renderHome()})();
 </script></body></html>
